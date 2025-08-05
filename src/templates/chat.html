@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}AI Chat Assistant - Chat{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="input-area">
+        <form id="message-form">
+            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off" required>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// ... existing JavaScript code ...
+</script>
+{% endblock %}

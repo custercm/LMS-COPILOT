@@ -1,0 +1,98 @@
+{
+  "name": "lms-copilot",
+  "displayName": "LMS Copilot",
+  "description": "GitHub Copilot-style AI assistant powered by LM Studio",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:lms-copilot.startChat"
+  ],
+  "main": "./dist/extension.js",
+  "browser": "./dist/webview/webview.js",
+  "contributes": {
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "lmsCopilotContainer",
+          "title": "LMS Copilot",
+          "icon": "$(robot)"
+        }
+      ]
+    },
+    "views": {
+      "lmsCopilotContainer": [
+        {
+          "type": "webview",
+          "id": "lmsCopilotChat",
+          "name": "LMS Copilot Chat",
+          "when": "lmsCopilot.enabled"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "lms-copilot.startChat",
+        "title": "LMS Copilot: Start Chat",
+        "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.togglePanel",
+        "title": "Toggle LMS Copilot Panel",
+        "category": "LMS Copilot"
+      }
+    ],
+    "configuration": {
+      "title": "LMS Copilot",
+      "properties": {
+        "lmsCopilot.endpoint": {
+          "type": "string",
+          "default": "http://localhost:1234",
+          "description": "LM Studio API endpoint"
+        },
+        "lmsCopilot.model": {
+          "type": "string",
+          "default": "llama3",
+          "description": "Default AI model to use"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "package": "webpack --mode production && webpack --config webpack.webview.config.js --mode production",
+    "dev": "webpack --mode development && webpack --config webpack.webview.config.js --mode development",
+    "watch:webview": "webpack --config webpack.webview.config.js --mode development --watch"
+  },
+  "devDependencies": {
+    "@types/diff": "^5.0.0",
+    "@types/marked": "^5.0.0",
+    "@types/node": "16.x",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/vscode": "^1.80.0",
+    "css-loader": "^6.8.1",
+    "html-webpack-plugin": "^5.5.3",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.4.0",
+    "typescript": "^5.0.0",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "axios": "^1.6.0",
+    "diff": "^5.1.0",
+    "highlight.js": "^11.9.0",
+    "marked": "^5.1.2",
+    "prismjs": "^1.29.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

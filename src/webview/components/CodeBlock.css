@@ -1,0 +1,76 @@
+.code-block {
+  margin: 12px 0;
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 8px;
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  overflow: hidden;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 16px;
+  background-color: var(--vscode-textCodeBlock-background, #0f0f0f);
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-x: auto;
+}
+
+.code-block code {
+  background: none;
+  padding: 0;
+  border: none;
+  font-family: inherit;
+}
+
+.diff-toggle {
+  padding: 8px 16px;
+  margin: 8px;
+  background-color: var(--vscode-button-secondaryBackground, #3c3c3c);
+  color: var(--vscode-button-secondaryForeground, #cccccc);
+  border: 1px solid var(--vscode-button-border, #3c3c3c);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.diff-toggle:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground, #505050);
+}
+
+.diff-viewer {
+  border-top: 1px solid var(--vscode-editorWidget-border, #454545);
+  background-color: var(--vscode-editorWidget-background, #2d2d30);
+}
+
+.streaming-actions {
+  border-top: 1px solid var(--vscode-editorWidget-border, #454545);
+  padding: 8px;
+  background-color: var(--vscode-editorWidget-background, #2d2d30);
+}
+
+/* Syntax highlighting for different languages */
+.code-block .language-javascript,
+.code-block .language-typescript {
+  border-left: 3px solid var(--vscode-editorInfo-foreground, #3794ff);
+}
+
+.code-block .language-python {
+  border-left: 3px solid var(--vscode-debugIcon-startForeground, #89d185);
+}
+
+.code-block .language-html,
+.code-block .language-css {
+  border-left: 3px solid var(--vscode-editorWarning-foreground, #ffcc02);
+}
+
+.code-block .language-json {
+  border-left: 3px solid var(--vscode-testing-iconPassed, #73c991);
+}
+
+.code-block .language-bash,
+.code-block .language-shell {
+  border-left: 3px solid var(--vscode-terminal-ansiGreen, #16c60c);
+}

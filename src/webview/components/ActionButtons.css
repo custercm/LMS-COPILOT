@@ -1,0 +1,73 @@
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.action-buttons button {
+  padding: 6px 12px;
+  border: 1px solid var(--vscode-button-border, #3c3c3c);
+  border-radius: 4px;
+  background-color: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-buttons button:hover {
+  background-color: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.action-buttons button:active {
+  background-color: var(--vscode-button-background, #0e639c);
+  transform: translateY(1px);
+}
+
+.copy-button {
+  background-color: var(--vscode-button-secondaryBackground, #3c3c3c);
+}
+
+.copy-button:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground, #505050);
+}
+
+.apply-button {
+  background-color: var(--vscode-testing-iconPassed, #73c991);
+  color: var(--vscode-editor-background, #1e1e1e);
+}
+
+.apply-button:hover {
+  background-color: #5bb574;
+}
+
+.run-button {
+  background-color: var(--vscode-debugIcon-startForeground, #89d185);
+  color: var(--vscode-editor-background, #1e1e1e);
+}
+
+.run-button:hover {
+  background-color: #6fc165;
+}
+
+.edit-button {
+  background-color: var(--vscode-editorWidget-background, #2d2d30);
+  border-color: var(--vscode-editorWidget-border, #454545);
+}
+
+.edit-button:hover {
+  background-color: var(--vscode-editorWidget-foreground, #cccccc);
+  color: var(--vscode-editorWidget-background, #2d2d30);
+}
+
+.regenerate-button {
+  background-color: var(--vscode-editorWarning-foreground, #ffcc02);
+  color: var(--vscode-editor-background, #1e1e1e);
+}
+
+.regenerate-button:hover {
+  background-color: #e6b800;
+}
