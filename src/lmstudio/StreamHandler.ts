@@ -1,3 +1,5 @@
+import { LMStudioClient } from './LMStudioClient';
+
 class StreamHandler {
   private client: LMStudioClient;
   private onChunkCallback: (chunk: string) => void;

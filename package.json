@@ -10,7 +10,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:lms-copilot.startChat"
+    "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "browser": "./dist/webview/webview.js",
@@ -29,8 +29,7 @@
         {
           "type": "webview",
           "id": "lmsCopilotChat",
-          "name": "LMS Copilot Chat",
-          "when": "lmsCopilot.enabled"
+          "name": "LMS Copilot Chat"
         }
       ]
     },

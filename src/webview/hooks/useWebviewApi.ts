@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { WebviewCommand } from '../types/api';
 
 // This would normally use VS Code's webview API
 function useWebviewApi() {
@@ -16,7 +17,7 @@ function useWebviewApi() {
     };
   }, []);
 
-  const sendMessage = (message: any) => {
+  const sendMessage = (message: WebviewCommand) => {
     vscode?.postMessage(message);
   };
 

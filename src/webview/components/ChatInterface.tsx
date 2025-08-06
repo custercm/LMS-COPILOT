@@ -1,73 +1,71 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
-import StreamingIndicator from './StreamingIndicator';
-import { useStreaming } from '../hooks/useStreaming';
-import { useChangeManagement } from '../hooks/useChangeManagement';
-import useWebviewApi from '../hooks/useWebviewApi';
-import { UserMessage, AssistantMessage } from '../types/messages';
+import { ChatResponse, ExtensionMessage, WebviewCommand, FileReference } from '../types/api';
+import { useWebviewApi } from '../hooks/useWebviewApi';
 
-function ChatInterface() {
-  const [messages, setMessages] = useState<(UserMessage | AssistantMessage)[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const { streamingState, startStreaming, appendToStream, endStreaming } = useStreaming();
-  const { changeSets, pendingChanges, applyChange, revertChange, previewChange } = useChangeManagement();
-  const { sendMessage: sendToBackend } = useWebviewApi();
+interface ChatInterfaceProps {
+  // No props needed for now
+}
+const ChatInterface: React.FC<ChatInterfaceProps> = () => {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [fileReferences, setFileReferences] = useState<FileReference[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const webviewApi = useWebviewApi();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Handle messages from VS Code extension
+  // Handle incoming messages from extension
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      const message = event.data;
+      const message: ExtensionMessage = event.data;
       
       switch (message.command) {
         case 'addMessage':
-          const newMessage: UserMessage | AssistantMessage = {
-            id: `msg-${Date.now()}`,
-            role: message.message.role,
-            content: message.message.content,
-            timestamp: message.message.timestamp || Date.now()
-          };
-          setMessages(prev => [...prev, newMessage]);
-          if (isTyping) setIsTyping(false);
+          setMessages(prev => [...prev, message.message]);
           break;
-          
         case 'showTypingIndicator':
-          setIsTyping(true);
+          setIsLoading(true);
           break;
-          
         case 'hideTypingIndicator':
-          setIsTyping(false);
+          setIsLoading(false);
           break;
-          
         case 'handleError':
-          const errorMessage: AssistantMessage = {
-            id: `error-${Date.now()}`,
-            role: 'assistant',
-            content: `Error: ${message.message}`,
-            timestamp: Date.now()
-          };
-          setMessages(prev => [...prev, errorMessage]);
-          setIsTyping(false);
+          // Handle error messages in UI
+          console.error(message.message);
           break;
       }
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [isTyping]);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const handleSendMessage = (content: string) => {
-    // Add user message to the list immediately
-    const userMessage: UserMessage = {
-      id: `user-${Date.now()}`,
+    if (!content.trim()) return;
+    
+    // Add user message immediately
+    const userMessage = {
       role: 'user',
       content,
       timestamp: Date.now()
     };
+    
     setMessages(prev => [...prev, userMessage]);
-
-    // Send to VS Code extension backend
-    sendToBackend({
+    
+    // Send to extension
+    webviewApi.sendMessage({
       command: 'sendMessage',
       text: content
     });
@@ -77,17 +75,35 @@ function ChatInterface() {
     <div className="chat-interface">
       <MessageList
         messages={messages}
-        streamingState={streamingState}
-        changeSets={changeSets}
+        fileReferences={fileReferences}
+        onOpenFile={(reference: FileReference) => {
+          // Send command to open file in editor
+          webviewApi.sendMessage({
+            command: 'openFile',
+            filePath: reference.path,
+            lineNumber: reference.line
+          });
+        }}
       />
-      {isTyping && <StreamingIndicator isStreaming={true} />}
+      
+      {isLoading && (
+        <div className="typing-indicator">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      )}
+      
       <InputArea
         onSendMessage={handleSendMessage}
-        pendingChanges={pendingChanges}
-        applyChange={applyChange}
-        revertChange={revertChange}
+        onFileSelect={(fileRef: FileReference) => {
+          setFileReferences(prev => [...prev, fileRef]);
+        }}
       />
+      
+      <div ref={messagesEndRef} />
     </div>
   );
-}
+};
+
 export default ChatInterface;

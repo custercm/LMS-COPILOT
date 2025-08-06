@@ -1,34 +1,49 @@
 import * as vscode from 'vscode';
-// Import ChatProvider
+import { LMStudioClient } from './client/LMStudioClient';
 import { ChatProvider } from './chat/ChatProvider';
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('Activating LMS Copilot Agent extension');
+  console.log('LMS Copilot extension is now active!');
 
-    // Register the chat provider
-    const chatProvider = new ChatProvider(context.extensionUri);
-    context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider('lmsCopilot.chat', chatProvider)
+    const client = new LMStudioClient(
+        vscode.workspace.getConfiguration('lmsCopilot').get('endpoint') || 'http://localhost:1234',
+        vscode.workspace.getConfiguration('lmsCopilot').get('model') || 'llama3'
     );
-    
-    // Add command handler for startChat
-    const startChatCommand = vscode.commands.registerCommand('lmsCopilot.startChat', () => {
-        // Implementation for starting a new chat session
-        vscode.window.showInformationMessage('Starting new chat session');
-        // Show the webview panel if it exists, or create one
-        // This would typically involve calling a method on the ChatProvider
-    });
-    
-    // Add command handler for togglePanel
-    const togglePanelCommand = vscode.commands.registerCommand('lmsCopilot.togglePanel', () => {
-        // Implementation for toggling the panel visibility
-        // This would involve checking if the webview is visible and toggling accordingly
-        vscode.window.showInformationMessage('Toggling panel visibility');
-    });
 
-    context.subscriptions.push(startChatCommand, togglePanelCommand);
+  // Register the chat provider
+  const chatProvider = new ChatProvider(client);
+
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(
+            'lmsCopilotChat',
+            chatProvider,
+            { webviewOptions: { retainContextWhenHidden: true } }
+        )
+    );
+
+  // Register commands for file operations
+    context.subscriptions.push(
+    vscode.commands.registerCommand('lms-copilot.openFile', async (filePath, lineNumber) => {
+        try {
+        const document = await vscode.workspace.openTextDocument(filePath);
+        const editor = await vscode.window.showTextDocument(document, {
+          preview: false,
+          selection: lineNumber ? new vscode.Range(lineNumber - 1, 0, lineNumber - 1, 0) : undefined
+        });
+
+        // If a line number was provided, set cursor position
+        if (lineNumber) {
+          const position = new vscode.Position(lineNumber - 1, 0);
+          editor.selection = new vscode.Selection(position, position);
+        }
+        } catch (error) {
+        console.error('Failed to open file:', error);
+        vscode.window.showErrorMessage(`Failed to open file: ${filePath}`);
+      }
+    })
+  );
 }
 
 export function deactivate() {
-    console.log('Deactivating LMS Copilot Agent extension');
+  console.log('LMS Copilot extension is now deactivated!');
 }

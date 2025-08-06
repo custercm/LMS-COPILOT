@@ -1,73 +1,82 @@
 .action-buttons {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
-  padding: 8px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
+  padding: 8px 0;
 }
 
-.action-buttons button {
-  padding: 6px 12px;
-  border: 1px solid var(--vscode-button-border, #3c3c3c);
+.action-button {
+  border: none;
   border-radius: 4px;
-  background-color: var(--vscode-button-background, #0e639c);
-  color: var(--vscode-button-foreground, #ffffff);
+  padding: 6px 12px;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  background-color: #44475a;
+  color: #f8f8f2;
+  transition: all 0.2s ease;
 }
 
-.action-buttons button:hover {
-  background-color: var(--vscode-button-hoverBackground, #1177bb);
-}
-
-.action-buttons button:active {
-  background-color: var(--vscode-button-background, #0e639c);
-  transform: translateY(1px);
+.action-button:hover {
+  background-color: #6272a4;
 }
 
 .copy-button {
-  background-color: var(--vscode-button-secondaryBackground, #3c3c3c);
+  background-color: #28a745;
 }
 
 .copy-button:hover {
-  background-color: var(--vscode-button-secondaryHoverBackground, #505050);
+  background-color: #218838;
 }
 
 .apply-button {
-  background-color: var(--vscode-testing-iconPassed, #73c991);
-  color: var(--vscode-editor-background, #1e1e1e);
+  background-color: #007bff;
 }
 
 .apply-button:hover {
-  background-color: #5bb574;
+  background-color: #0069d9;
 }
 
 .run-button {
-  background-color: var(--vscode-debugIcon-startForeground, #89d185);
-  color: var(--vscode-editor-background, #1e1e1e);
+  background-color: #ffc107;
+  color: #212529;
 }
 
 .run-button:hover {
-  background-color: #6fc165;
+  background-color: #e0a800;
 }
 
 .edit-button {
-  background-color: var(--vscode-editorWidget-background, #2d2d30);
-  border-color: var(--vscode-editorWidget-border, #454545);
+  background-color: #6c757d;
 }
 
 .edit-button:hover {
-  background-color: var(--vscode-editorWidget-foreground, #cccccc);
-  color: var(--vscode-editorWidget-background, #2d2d30);
+  background-color: #5a6268;
 }
 
 .regenerate-button {
-  background-color: var(--vscode-editorWarning-foreground, #ffcc02);
-  color: var(--vscode-editor-background, #1e1e1e);
+  background-color: #fd7e14;
+  color: white;
 }
 
 .regenerate-button:hover {
-  background-color: #e6b800;
+  background-color: #e0690f;
+}
+
+.toast-notification {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 100;
+  animation: fadeInOut 2s forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
 }

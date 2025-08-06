@@ -1,6 +1,8 @@
-class CompletionProvider implements vscode.InlineCompletionItemProvider {
+import * as vscode from 'vscode';
+
+export class CompletionProvider implements vscode.InlineCompletionItemProvider {
   
-  provideInlineCompletions(
+  provideInlineCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
     context: vscode.InlineCompletionContext,

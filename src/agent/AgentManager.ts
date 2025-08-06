@@ -11,7 +11,7 @@ export interface AgentCapabilities {
   streamingResponses: boolean;
 }
 
-class AgentManager {
+export class AgentManager {
   private taskExecutor: TaskExecutor;
   private toolRegistry: ToolRegistry;
   private capabilities: AgentCapabilities;

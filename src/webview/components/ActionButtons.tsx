@@ -1,5 +1,4 @@
-import React from 'react';
-import useWebviewApi from '../hooks/useWebviewApi';
+import React, { useState } from 'react';
 import './ActionButtons.css';
 
 interface ActionButtonsProps {
@@ -7,59 +6,69 @@ interface ActionButtonsProps {
   changeId?: string;
 }
 
-function ActionButtons({ codeBlock, changeId }: ActionButtonsProps) {
-  const { sendMessage } = useWebviewApi();
-
+const ActionButtons: React.FC<ActionButtonsProps> = ({ 
+  codeBlock,
+  changeId 
+}) => {
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
+  
+  // Handle copy to clipboard
   const handleCopy = async () => {
     if (codeBlock) {
       try {
         await navigator.clipboard.writeText(codeBlock);
-        // Could show a toast notification here
+        setShowCopiedToast(true);
+        setTimeout(() => setShowCopiedToast(false), 2000);
       } catch (error) {
         console.error('Failed to copy to clipboard:', error);
       }
     }
   };
 
+  // Handle apply change
   const handleApply = () => {
     if (codeBlock && changeId) {
-      sendMessage({
-        command: 'applyChange',
-        changeId,
-        content: codeBlock
-      });
+      // This would typically send a message through the webview API
+      // For now just showing an alert - actual implementation will use sendMessage from hooks
+      alert(`Applying changes for ${changeId}`);
     }
   };
 
+  // Handle run code
   const handleRun = () => {
     if (codeBlock) {
-      sendMessage({
-        command: 'runCode',
-        code: codeBlock,
-        changeId
-      });
+      // This would typically send a message through the webview API
+      // For now just showing an alert - actual implementation will use sendMessage from hooks
+      alert(`Running code: ${codeBlock.substring(0, 50)}...`);
     }
   };
 
+  // Handle edit in editor
   const handleEdit = () => {
     if (codeBlock && changeId) {
-      sendMessage({
-        command: 'editInEditor',
-        content: codeBlock,
-        changeId
-      });
+      // This would typically send a message through the webview API
+      // For now just showing an alert - actual implementation will use sendMessage from hooks
+      alert(`Editing code for ${changeId}`);
     }
   };
 
+  // Handle regenerate response
   const handleRegenerate = () => {
-    sendMessage({
-      command: 'regenerateResponse',
-      changeId
-    });
+    if (changeId) {
+      // This would typically send a message through the webview API
+      // For now just showing an alert - actual implementation will use sendMessage from hooks
+      alert(`Regenerating response for ${changeId}`);
+    }
   };
 
   return (
     <div className="action-buttons">
+      {showCopiedToast && (
+        <div className="toast-notification">
+          Copied to clipboard!
+        </div>
+      )}
+      
       <button onClick={handleCopy} className="copy-button" title="Copy to clipboard">
         Copy
       </button>
@@ -77,6 +86,6 @@ function ActionButtons({ codeBlock, changeId }: ActionButtonsProps) {
       </button>
     </div>
   );
-}
+};
 
 export default ActionButtons;

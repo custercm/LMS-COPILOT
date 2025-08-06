@@ -1,38 +1,31 @@
 import React from 'react';
 import MessageItem from './MessageItem';
-import { UserMessage, AssistantMessage } from '../types/messages';
-import { ChangeSet } from '../types/changes';
 
-interface MessageListProps {
-  messages: (UserMessage | AssistantMessage)[];
-  streamingState?: any;
-  changeSets: ChangeSet[];
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  fileReferences?: FileReference[];
 }
 
-function MessageList({ messages, streamingState, changeSets }: MessageListProps) {
+interface MessageListProps {
+  messages: Message[];
+  fileReferences: FileReference[];
+  onOpenFile: (reference: FileReference) => void;
+}
+
+function MessageList({ messages, fileReferences, onOpenFile }: MessageListProps) {
   return (
     <div className="message-list">
-      {messages.map((msg) => (
+      {messages.map((message) => (
         <MessageItem 
-          key={msg.id} 
-          message={msg}
-          isStreaming={streamingState?.messageId === msg.id && streamingState.isStreaming}
+          key={message.id}
+          message={message}
+          fileReferences={fileReferences.filter(ref => ref.path.includes(message.id))}
+          onOpenFile={onOpenFile}
         />
       ))}
-      
-      {/* Display pending changes */}
-      {changeSets.length > 0 && (
-        <div className="changes-summary">
-          <h3>Pending Changes</h3>
-          <ul>
-            {changeSets.map(changeSet => (
-              <li key={changeSet.id}>
-                {changeSet.description} ({changeSet.changes.length} files)
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

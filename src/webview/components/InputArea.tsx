@@ -1,59 +1,36 @@
 import React, { useState } from 'react';
+
 interface InputAreaProps {
   onSendMessage: (content: string) => void;
-  pendingChanges?: any[];
-  applyChange?: (changeId: string) => void;
-  revertChange?: (changeId: string) => void;
 }
 
-function InputArea({
-  onSendMessage,
-  pendingChanges,
-  applyChange,
-  revertChange
-}: InputAreaProps) {
+const InputArea: React.FC<InputAreaProps> = ({ onSendMessage }) => {
   const [inputValue, setInputValue] = useState('');
-  return (
-    <div className="input-area">
-      {pendingChanges && pendingChanges.length > 0 && (
-        <div className="pending-changes-bar">
-          <span>{pendingChanges.length} changes pending</span>
-          <button
-            onClick={() => applyChange?.(pendingChanges[0].id)}
-            className="apply-button"
-          >
-            Apply All
-      </button>
-          <button
-            onClick={() => revertChange?.(pendingChanges[0].id)}
-            className="revert-button"
-          >
-            Revert All
-          </button>
-        </div>
-      )}
 
-      <textarea
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        placeholder="Ask a question or provide context..."
-        className="message-input"
-      />
-
-      <div className="send-button-container">
-        <button
-          onClick={() => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
             onSendMessage(inputValue);
             setInputValue('');
-          }}
-          disabled={!inputValue.trim()}
+  };
+
+  return (
+    <form className="input-area" onSubmit={handleSubmit}>
+      <input
+        type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+        placeholder="Ask Copilot or type / for commands"
+        className="message-input"
+        />
+        <button
+          type="submit"
           className="send-button"
+        disabled={!inputValue.trim()}
         >
           Send
         </button>
-      </div>
-    </div>
+    </form>
   );
-}
+};
 
 export default InputArea;

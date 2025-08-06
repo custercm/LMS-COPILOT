@@ -1,31 +1,29 @@
 import * as vscode from 'vscode';
-import { LMStudioClient } from '../lmstudio/LMStudioClient';
-import { TerminalTools } from '../tools/TerminalTools';
+import { LMStudioClient } from '../client/LMStudioClient';
 
 export class ChatProvider implements vscode.WebviewViewProvider {
     private _webviewView: vscode.WebviewView | undefined;
     private client: LMStudioClient;
-    private terminalTools = new TerminalTools();
 
-    constructor(private readonly extensionUri: vscode.Uri) { 
-        this.client = new LMStudioClient();
+    constructor(client: LMStudioClient) {
+        this.client = client;
     }
 
-    public resolveWebviewView(
+    public async resolveWebviewView(
         webviewView: vscode.WebviewView,
         context: vscode.WebviewViewResolveContext,
-        _token: vscode.CancellationToken
+        token: vscode.CancellationToken
     ) {
         this._webviewView = webviewView;
         
         webviewView.webview.options = {
             enableScripts: true,
-            localResourceRoots: [this.extensionUri]
+            localResourceRoots: [vscode.Uri.file(__dirname)]
         };
         
         // Set the HTML content for the webview
-        webviewView.webview.html = this.getWebviewContent();
-        
+        webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
+
         // Handle messages from the webview
         webviewView.webview.onDidReceiveMessage(async (message) => {
             switch (message.command) {
@@ -38,8 +36,67 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 case 'getWorkspaceStructure':
                     await this.handleGetWorkspaceStructure();
                     return;
+                case 'applyChange':
+                    await this.handleApplyChange(message.changeId, message.content);
+                    return;
+                case 'runCode':
+                    await this.handleRunCode(message.code, message.changeId);
+                    return;
+                case 'editInEditor':
+                    await this.handleEditInEditor(message.content, message.changeId);
+                    return;
+                case 'regenerateResponse':
+                    await this.handleRegenerateResponse(message.changeId);
+                    return;
+                case 'openFile':
+                    // Handle opening files from the webview
+                    const fileUri = vscode.Uri.file(message.filePath);
+                    try {
+                        const document = await vscode.workspace.openTextDocument(fileUri);
+                        await vscode.window.showTextDocument(document, { 
+                            preview: false,
+                            selection: message.lineNumber ? new vscode.Range(message.lineNumber - 1, 0, message.lineNumber - 1, 0) : undefined
+                        });
+                    } catch (error) {
+                        console.error('Failed to open file:', error);
+                        vscode.window.showErrorMessage(`Failed to open file: ${message.filePath}`);
+                    }
+                    return;
             }
         });
+    }
+
+    private getHtmlForWebview(webview: vscode.Webview): string {
+        // Use the built React webview instead of hardcoded HTML
+        const webviewPath = vscode.Uri.joinPath(vscode.Uri.file(__dirname), 'dist', 'webview', 'webview.js');
+        const webviewUri = webview.asWebviewUri(webviewPath);
+        
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS Copilot Chat</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+        }
+        #root {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="${webviewUri}"></script>
+</body>
+</html>`;
     }
 
     private async handleSendMessage(message: string): Promise<void> {
@@ -122,6 +179,96 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    private async handleApplyChange(changeId: string, content: string): Promise<void> {
+        if (!this._webviewView) return;
+        
+        try {
+            // In a real implementation this would call PanelManager.applyChanges()
+            // This is where we'd actually modify files in the workspace
+            
+            this._webviewView.webview.postMessage({
+                command: 'showNotification',
+                message: `Applied changes for ${changeId}`
+            });
+        } catch (error) {
+            console.error('Error applying change:', error);
+            this._webviewView.webview.postMessage({
+                command: 'handleError',
+                message: `Failed to apply changes: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+        }
+    }
+
+    private async handleRunCode(code: string, changeId?: string): Promise<void> {
+        if (!this._webviewView) return;
+        
+        try {
+            // Execute code in a sandboxed environment
+            const output = await this.executeTerminalCommand(code);
+            
+            this.showTerminalOutput(code, output);
+        } catch (error) {
+            console.error('Error running code:', error);
+            this._webviewView.webview.postMessage({
+                command: 'handleError',
+                message: `Failed to run code: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+        }
+    }
+
+    private async handleEditInEditor(content: string, changeId?: string): Promise<void> {
+        if (!this._webviewView) return;
+        
+        try {
+            // Open document in editor for editing
+            const doc = await vscode.workspace.openTextDocument({ content, language: 'typescript' });
+            await vscode.window.showTextDocument(doc);
+            
+            this._webviewView.webview.postMessage({
+                command: 'showNotification',
+                message: `Opened editor for ${changeId || 'unnamed'}`
+            });
+        } catch (error) {
+            console.error('Error editing in editor:', error);
+            this._webviewView.webview.postMessage({
+                command: 'handleError',
+                message: `Failed to open editor: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+        }
+    }
+
+    private async handleRegenerateResponse(changeId?: string): Promise<void> {
+        if (!this._webviewView) return;
+        
+        try {
+            this._webviewView.webview.postMessage({
+                command: 'showNotification',
+                message: `Regenerated response for ${changeId || 'unnamed'}`
+            });
+        } catch (error) {
+            console.error('Error regenerating response:', error);
+            this._webviewView.webview.postMessage({
+                command: 'handleError',
+                message: `Failed to regenerate response: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+        }
+    }
+
+    private async executeTerminalCommand(command: string): Promise<string> {
+        // Placeholder for terminal execution - in practice this would use VS Code's Terminal API
+        return `Output of command:\n${command}`;
+    }
+
+    private showTerminalOutput(command: string, output: string): void {
+        if (!this._webviewView) return;
+        
+        this._webviewView.webview.postMessage({
+            command: 'showTerminalOutput',
+            output,
+            commandText: command
+        });
+    }
+
     private async getWorkspaceStructure(): Promise<string> {
         // Implementation for getting workspace structure
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -147,38 +294,5 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         this._webviewView.webview.postMessage({
             command: 'hideTypingIndicator'
         });
-    }
-
-    private getWebviewContent(): string {
-        // Use the built React webview instead of hardcoded HTML
-        const webviewPath = vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'webview.js');
-        const webviewUri = this._webviewView?.webview.asWebviewUri(webviewPath);
-        
-        return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMS Copilot Chat</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: var(--vscode-editor-background);
-            color: var(--vscode-editor-foreground);
-        }
-        #root {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-    <script src="${webviewUri}"></script>
-</body>
-</html>`;
     }
 }

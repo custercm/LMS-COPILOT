@@ -1,3 +1,6 @@
+import { ChatProvider } from './ChatProvider';
+import { AgentManager } from '../agent/AgentManager';
+
 class MessageHandler {
   private chatProvider: ChatProvider;
   private agentManager: AgentManager;
@@ -23,6 +26,7 @@ class MessageHandler {
   private async handleChatMessage(message: string): Promise<void> {
     // Send message to LM Studio and get response
     const response = await this.agentManager.processTask(message);
-    this.chatProvider.appendMessage(response);
+    // Note: ChatProvider doesn't have appendMessage method, this is a placeholder
+    console.log('Response:', response);
   }
 }

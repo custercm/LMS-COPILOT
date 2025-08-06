@@ -1,3 +1,5 @@
+import { ContextAnalyzer } from '../completion/ContextAnalyzer';
+
 class CodeAnalysis {
   private contextAnalyzer: ContextAnalyzer;
 

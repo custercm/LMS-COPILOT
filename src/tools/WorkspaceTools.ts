@@ -1,3 +1,6 @@
+import * as vscode from 'vscode';
+import { AgentManager } from '../agent/AgentManager';
+
 class WorkspaceTools {
   private agentManager: AgentManager;
 

@@ -1,3 +1,11 @@
+import * as vscode from 'vscode';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+}
+
 class ChatPanel {
   private webview: vscode.Webview;
   private messages: Message[] = [];
@@ -13,7 +21,7 @@ class ChatPanel {
 
   // Add new message to chat display
   addMessage(role: 'user' | 'assistant', content: string): void {
-    this.messages.push({ role, content });
+    this.messages.push({ role, content, timestamp: Date.now() });
     // Update webview with new message
   }
 

@@ -1,5 +1,6 @@
-class ContextAnalyzer {
+import * as vscode from 'vscode';
 
+export class ContextAnalyzer {
   analyzeContext(document: vscode.TextDocument, position: vscode.Position): any {
     // Analyze current document context for better suggestions
     const line = document.lineAt(position);

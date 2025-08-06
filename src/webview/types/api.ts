@@ -48,12 +48,25 @@ export interface RegenerateResponseCommand {
   changeId?: string;
 }
 
+export interface OpenFileCommand {
+  command: 'openFile';
+  filePath: string;
+  lineNumber?: number;
+}
+
+export interface FileReference {
+  path: string;
+  line?: number;
+  column?: number;
+}
+
 export type WebviewCommand = 
   | SendMessageCommand 
   | ApplyChangeCommand 
   | RunCodeCommand 
   | EditInEditorCommand 
-  | RegenerateResponseCommand;
+  | RegenerateResponseCommand
+  | OpenFileCommand;
 
 // Messages received from extension
 export interface AddMessageEvent {
@@ -78,8 +91,14 @@ export interface HandleErrorEvent {
   message: string;
 }
 
+export interface AddFileReferenceEvent {
+  command: 'addFileReference';
+  reference: FileReference;
+}
+
 export type ExtensionMessage = 
   | AddMessageEvent 
   | ShowTypingIndicatorEvent 
   | HideTypingIndicatorEvent 
-  | HandleErrorEvent;
+  | HandleErrorEvent
+  | AddFileReferenceEvent;
