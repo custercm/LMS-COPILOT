@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FileReference as FileReferenceType } from '../types/api';
+import { getFileIcon, categorizeFile } from '../types/media';
 import './FileReference.css';
 
 interface FileReferenceProps {
   reference: FileReferenceType;
   onOpenFile?: (filePath: string, lineNumber?: number) => void;
   onPreviewFile?: (filePath: string) => Promise<string>;
+  onMediaOperation?: (filePath: string, operation: 'preview' | 'convert' | 'metadata' | 'analyze') => void;
   showPreview?: boolean;
   className?: string;
 }
@@ -14,6 +16,7 @@ const FileReference: React.FC<FileReferenceProps> = ({
   reference,
   onOpenFile,
   onPreviewFile,
+  onMediaOperation,
   showPreview = true,
   className = ''
 }) => {
@@ -23,6 +26,20 @@ const FileReference: React.FC<FileReferenceProps> = ({
   const [error, setError] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Determine if this is a media file
+  const getMimeType = (filePath: string): string => {
+    const ext = getFileExtension(filePath);
+    const mimeTypes: Record<string, string> = {
+      'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif',
+      'pdf': 'application/pdf', 'csv': 'text/csv', 'json': 'application/json',
+      'txt': 'text/plain', 'md': 'text/markdown', 'html': 'text/html'
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
+  };
+  
+  const fileCategory = categorizeFile(getMimeType(reference.path));
+  const isMediaFile = ['image', 'document', 'data'].includes(fileCategory);
 
   // Get file extension for icon determination
   const getFileExtension = (filePath: string): string => {
@@ -158,6 +175,16 @@ const FileReference: React.FC<FileReferenceProps> = ({
     return result;
   };
 
+  // Handle media operations
+  const handleMediaOperation = (operation: 'preview' | 'convert' | 'metadata' | 'analyze', e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (onMediaOperation) {
+      onMediaOperation(reference.path, operation);
+    }
+  };
+
   // Clean up timeout on unmount
   useEffect(() => {
     return () => {
@@ -226,6 +253,38 @@ const FileReference: React.FC<FileReferenceProps> = ({
         >
           <span role="img" aria-hidden="true">✏️</span>
         </button>
+        
+        {/* Media operation buttons for supported files */}
+        {isMediaFile && onMediaOperation && (
+          <>
+            <button
+              className="quick-action-button media-button"
+              onClick={(e) => handleMediaOperation('preview', e)}
+              title="Preview in media viewer"
+              aria-label="Preview in media viewer"
+            >
+              <span role="img" aria-hidden="true">🖼️</span>
+            </button>
+            <button
+              className="quick-action-button media-button"
+              onClick={(e) => handleMediaOperation('analyze', e)}
+              title="Analyze file content"
+              aria-label="Analyze file content"
+            >
+              <span role="img" aria-hidden="true">🔍</span>
+            </button>
+            {fileCategory === 'image' && (
+              <button
+                className="quick-action-button media-button"
+                onClick={(e) => handleMediaOperation('convert', e)}
+                title="Convert image format"
+                aria-label="Convert image format"
+              >
+                <span role="img" aria-hidden="true">🔄</span>
+              </button>
+            )}
+          </>
+        )}
       </div>
 
       {/* Hover Preview Tooltip */}

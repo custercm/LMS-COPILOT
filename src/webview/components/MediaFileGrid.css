@@ -1,0 +1,347 @@
+/* Media File Grid Styles */
+
+.media-file-grid {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--vscode-panel-background);
+  color: var(--vscode-foreground);
+}
+
+.grid-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-background);
+  flex-shrink: 0;
+}
+
+.view-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.view-button {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  padding: 6px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.view-button:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.view-button.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+}
+
+.filter-select {
+  background: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-dropdown-border);
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.batch-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.selection-count {
+  color: var(--vscode-descriptionForeground);
+  font-weight: 500;
+}
+
+.select-button,
+.batch-button {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.select-button:hover,
+.batch-button:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.batch-button {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.batch-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.file-count {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-editor-background);
+  border-bottom: 1px solid var(--vscode-widget-border);
+  flex-shrink: 0;
+}
+
+.grid-content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+/* Grid View */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  padding: 8px;
+}
+
+.grid-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.file-selection-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--vscode-focusBorder);
+}
+
+/* List View */
+.media-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.list-header {
+  display: grid;
+  grid-template-columns: 1fr 80px 120px 100px;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--vscode-list-hoverBackground);
+  border-bottom: 1px solid var(--vscode-widget-border);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vscode-foreground);
+}
+
+.header-cell {
+  cursor: pointer;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.header-cell:hover {
+  color: var(--vscode-focusBorder);
+}
+
+.list-item {
+  display: grid;
+  grid-template-columns: 24px 60px 1fr;
+  gap: 12px;
+  padding: 8px 12px;
+  align-items: center;
+  cursor: pointer;
+  border-bottom: 1px solid var(--vscode-widget-border);
+  transition: background 0.2s ease;
+}
+
+.list-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.list-item.selected {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vscode-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-info {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.file-size,
+.file-type,
+.file-date {
+  white-space: nowrap;
+}
+
+.file-type {
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  color: var(--vscode-foreground);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+  max-width: 300px;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+  }
+  
+  .grid-controls {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  
+  .batch-controls {
+    justify-content: space-between;
+  }
+  
+  .list-header {
+    grid-template-columns: 1fr 60px 80px 80px;
+    font-size: 11px;
+  }
+  
+  .list-item {
+    grid-template-columns: 20px 50px 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+  }
+  
+  .list-header {
+    display: none;
+  }
+  
+  .list-item {
+    grid-template-columns: 20px 40px 1fr;
+    padding: 6px 8px;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .grid-controls,
+  .list-header,
+  .list-item {
+    border-width: 2px;
+  }
+  
+  .file-selection-checkbox {
+    border: 2px solid var(--vscode-foreground);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .view-button,
+  .select-button,
+  .batch-button,
+  .header-cell,
+  .list-item {
+    transition: none;
+  }
+}
+
+/* Dark theme adjustments */
+.vscode-dark .media-grid {
+  background: var(--vscode-panel-background);
+}
+
+.vscode-dark .list-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.vscode-dark .list-item.selected {
+  background: rgba(0, 122, 204, 0.3);
+}
+
+/* Focus management */
+.view-button:focus,
+.select-button:focus,
+.batch-button:focus,
+.filter-select:focus {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.list-item:focus {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: -2px;
+}

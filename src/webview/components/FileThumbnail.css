@@ -1,0 +1,310 @@
+/* File Thumbnail Styles */
+
+.file-thumbnail {
+  position: relative;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  border: 1px solid var(--vscode-widget-border);
+  background: var(--vscode-editor-background);
+  user-select: none;
+}
+
+.file-thumbnail:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--vscode-focusBorder);
+}
+
+.file-thumbnail:active {
+  transform: translateY(0);
+}
+
+/* Size variants */
+.file-thumbnail.small {
+  width: 80px;
+  height: 100px;
+}
+
+.file-thumbnail.medium {
+  width: 120px;
+  height: 150px;
+}
+
+.file-thumbnail.large {
+  width: 180px;
+  height: 220px;
+}
+
+.thumbnail-container {
+  position: relative;
+  width: 100%;
+  height: 70%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--vscode-editor-background);
+}
+
+.thumbnail-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.thumbnail-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--vscode-descriptionForeground);
+}
+
+.loading-spinner {
+  font-size: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.thumbnail-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--vscode-textBlockQuote-background);
+}
+
+.fallback-icon {
+  font-size: 32px;
+  opacity: 0.7;
+}
+
+.file-thumbnail.small .fallback-icon {
+  font-size: 24px;
+}
+
+.file-thumbnail.large .fallback-icon {
+  font-size: 48px;
+}
+
+.thumbnail-overlay {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.file-thumbnail:hover .thumbnail-overlay {
+  opacity: 1;
+}
+
+.file-extension {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.thumbnail-metadata {
+  padding: 8px;
+  height: 30%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-top: 1px solid var(--vscode-widget-border);
+  background: var(--vscode-panel-background);
+}
+
+.file-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--vscode-foreground);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-thumbnail.small .file-name {
+  font-size: 9px;
+}
+
+.file-thumbnail.large .file-name {
+  font-size: 12px;
+}
+
+.file-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.file-size,
+.file-type {
+  font-size: 9px;
+  color: var(--vscode-descriptionForeground);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.file-thumbnail.large .file-size,
+.file-thumbnail.large .file-type {
+  font-size: 10px;
+}
+
+.file-type {
+  padding: 1px 3px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+/* Hover effects */
+.file-thumbnail:hover .file-name {
+  color: var(--vscode-focusBorder);
+}
+
+.file-thumbnail:hover .thumbnail-container {
+  background: var(--vscode-list-hoverBackground);
+}
+
+/* Selection states */
+.file-thumbnail.selected {
+  border-color: var(--vscode-focusBorder);
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.file-thumbnail.selected .thumbnail-metadata {
+  background: var(--vscode-list-activeSelectionBackground);
+}
+
+.file-thumbnail.selected .file-name {
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* File type specific styling */
+.file-thumbnail[data-category="image"] .thumbnail-container {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.file-thumbnail[data-category="document"] .thumbnail-container {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+}
+
+.file-thumbnail[data-category="data"] .thumbnail-container {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+}
+
+.file-thumbnail[data-category="video"] .thumbnail-container {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+}
+
+.file-thumbnail[data-category="audio"] .thumbnail-container {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+}
+
+/* Error state */
+.file-thumbnail.error {
+  border-color: var(--vscode-errorForeground);
+  opacity: 0.7;
+}
+
+.file-thumbnail.error .thumbnail-container {
+  background: var(--vscode-errorBackground);
+}
+
+.file-thumbnail.error .fallback-icon {
+  color: var(--vscode-errorForeground);
+}
+
+/* Loading state */
+.file-thumbnail.loading {
+  pointer-events: none;
+}
+
+.file-thumbnail.loading .thumbnail-container {
+  background: var(--vscode-progressBar-background);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .file-thumbnail.medium {
+    width: 100px;
+    height: 125px;
+  }
+  
+  .file-thumbnail.large {
+    width: 140px;
+    height: 175px;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .file-thumbnail {
+    border-width: 2px;
+  }
+  
+  .thumbnail-overlay {
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid white;
+  }
+  
+  .file-type {
+    border: 1px solid var(--vscode-badge-foreground);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .file-thumbnail,
+  .loading-spinner,
+  .thumbnail-overlay {
+    animation: none;
+    transition: none;
+  }
+  
+  .file-thumbnail:hover {
+    transform: none;
+  }
+}
+
+/* Dark theme adjustments */
+.vscode-dark .file-thumbnail[data-category="image"] .thumbnail-container {
+  background: linear-gradient(135deg, #2d3142 0%, #3c4043 100%);
+}
+
+.vscode-dark .file-thumbnail[data-category="document"] .thumbnail-container {
+  background: linear-gradient(135deg, #4a4237 0%, #5a4a37 100%);
+}
+
+.vscode-dark .file-thumbnail[data-category="data"] .thumbnail-container {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+/* Focus management */
+.file-thumbnail:focus {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.file-thumbnail:focus:not(:focus-visible) {
+  outline: none;
+}
