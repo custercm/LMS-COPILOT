@@ -12,13 +12,6 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     private permissionsManager: PermissionsManager;
     private rateLimiter: RateLimiter;
     private adaptiveSecurity: AdaptiveSecurityManager;
-    
-    // Rate limiting properties (deprecated - using RateLimiter instead)
-    private requestCount: number = 0;
-    private resetTime: number = Date.now() + 60000;
-    private lastApiCallTime: number | null = null;
-    private regenerateRateLimitTime: number | null = null;
-    private workspaceStructureRateLimitTime: number | null = null;
     private extensionUri: vscode.Uri;
 
     constructor(client: LMStudioClient, extensionUri: vscode.Uri) { 
@@ -72,22 +65,24 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         // Handle messages from the webview
         webviewView.webview.onDidReceiveMessage(async (message) => {
             try {
-                // Rate limit check for all incoming messages
-                const rateLimitResult = this.rateLimiter.checkLimit('chat_messages');
-                if (!rateLimitResult.allowed) {
-                    webviewView.webview.postMessage({
-                        command: 'error',
-                        message: `Rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`
-                    });
-                    return;
+                // Rate limit check for all incoming messages (if enabled by adaptive security)
+                if (this.adaptiveSecurity.shouldRateLimit('chat_messages')) {
+                    const rateLimitResult = this.rateLimiter.checkLimit('chat_messages');
+                    if (!rateLimitResult.allowed) {
+                        webviewView.webview.postMessage({
+                            command: 'error',
+                            message: `Rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`
+                        });
+                        return;
+                    }
                 }
 
-                // Sanitize incoming message
+                // Sanitize incoming message using adaptive security
                 const sanitizedMessage = {
                     ...message,
-                    text: message.text ? this.securityManager.sanitizeInput(message.text) : message.text,
-                    content: message.content ? this.securityManager.sanitizeInput(message.content) : message.content,
-                    code: message.code ? this.securityManager.sanitizeInput(message.code) : message.code
+                    text: message.text ? this.adaptiveSecurity.sanitizeInput(message.text) : message.text,
+                    content: message.content ? this.adaptiveSecurity.sanitizeInput(message.content) : message.content,
+                    code: message.code ? this.adaptiveSecurity.sanitizeInput(message.code) : message.code
                 };
 
                 switch (sanitizedMessage.command) {
@@ -119,33 +114,35 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                         await this.handleCreateFile(sanitizedMessage.filePath, sanitizedMessage.content, sanitizedMessage.requestId);
                         return;
                     case 'openFile':
-                        // Handle opening files from the webview with permission check
-                        const permissionResult = await this.permissionsManager.checkPermission(
-                            sanitizedMessage.filePath, 
-                            'READ'
-                        );
-                        
-                        if (!permissionResult.allowed) {
-                            if (permissionResult.requiresUserConfirmation) {
-                                const approved = await this.permissionsManager.requestUserPermission(
-                                    'read file',
-                                    sanitizedMessage.filePath,
-                                    permissionResult.details || 'Open file in editor'
-                                );
-                                
-                                if (!approved) {
+                        // Handle opening files from the webview with permission check (if enabled)
+                        if (this.adaptiveSecurity.shouldCheckFilePermissions()) {
+                            const permissionResult = await this.permissionsManager.checkPermission(
+                                sanitizedMessage.filePath, 
+                                'READ'
+                            );
+                            
+                            if (!permissionResult.allowed) {
+                                if (permissionResult.requiresUserConfirmation) {
+                                    const approved = await this.permissionsManager.requestUserPermission(
+                                        'read file',
+                                        sanitizedMessage.filePath,
+                                        permissionResult.details || 'Open file in editor'
+                                    );
+                                    
+                                    if (!approved) {
+                                        webviewView.webview.postMessage({
+                                            command: 'error',
+                                            message: `Permission denied: ${permissionResult.reason}`
+                                        });
+                                        return;
+                                    }
+                                } else {
                                     webviewView.webview.postMessage({
                                         command: 'error',
                                         message: `Permission denied: ${permissionResult.reason}`
                                     });
                                     return;
                                 }
-                            } else {
-                                webviewView.webview.postMessage({
-                                    command: 'error',
-                                    message: `Permission denied: ${permissionResult.reason}`
-                                });
-                                return;
                             }
                         }
 
@@ -165,15 +162,19 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             } catch (error) {
                 // Global error handling for all message processing
                 console.error('Error processing webview message:', error);
-                this.securityManager.logAuditEvent({
-                    type: 'message_processing_error',
-                    timestamp: new Date(),
-                    approved: false,
-                    details: { 
-                        command: message.command, 
-                        error: error instanceof Error ? error.message : 'Unknown error' 
-                    }
-                });
+                
+                // Log audit event only if adaptive security requires it
+                if (this.adaptiveSecurity.shouldLogAudit()) {
+                    this.securityManager.logAuditEvent({
+                        type: 'message_processing_error',
+                        timestamp: new Date(),
+                        approved: false,
+                        details: { 
+                            command: message.command, 
+                            error: error instanceof Error ? error.message : 'Unknown error' 
+                        }
+                    });
+                }
                 
                 webviewView.webview.postMessage({
                     command: 'error',
@@ -188,14 +189,16 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         const webviewPath = vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'webview.js');
         const webviewUri = webview.asWebviewUri(webviewPath);
         
-        // Add CSP meta tag in HTML content for webview security  
+        // Generate CSP using adaptive security manager
+        const cspPolicy = this.adaptiveSecurity.getCSPPolicy(webview);
+        
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" 
-          content="${this.securityManager.generateCSP(webview)}">
+          content="${cspPolicy}">
     <title>LMS Copilot Chat</title>
     <style>
         body {
@@ -224,15 +227,18 @@ export class ChatProvider implements vscode.WebviewViewProvider {
 
         try {
             // Sanitize user input before sending to LM Studio
-            const sanitizedMessage = this._sanitizeInput(message);
+            const sanitizedMessage = this.adaptiveSecurity.sanitizeInput(message);
             
             if (!this._validateMessage(sanitizedMessage)) {
                 throw new Error('Invalid message content');
             }
             
-            // Add rate limiting for API calls  
-            if (await this._checkRateLimit()) {
-              throw new Error('API call rate limit exceeded');
+            // Add rate limiting for API calls (if enabled by adaptive security)
+            if (this.adaptiveSecurity.shouldRateLimit('api_calls')) {
+                const rateLimitResult = this.rateLimiter.checkLimit('api_calls');
+                if (!rateLimitResult.allowed) {
+                    throw new Error(`API call rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`);
+                }
             }
 
             // Show typing indicator while waiting for response
@@ -268,7 +274,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         
         try {
             // Validate workspace structure input
-            const sanitizedStructure = this._sanitizeInput(structure);
+            const sanitizedStructure = this.adaptiveSecurity.sanitizeInput(structure);
             
             if (!this._validateWorkspaceStructure(sanitizedStructure)) {
                 throw new Error('Invalid workspace structure');
@@ -298,13 +304,13 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         if (!this._webviewView) return;
         
         try {
-            // Add rate limiting to API calls
-            const now = Date.now();
-            if (this.lastApiCallTime && (now - this.lastApiCallTime) < 1000) {
-                throw new Error('Rate limit exceeded. Please wait before calling again.');
+            // Add rate limiting to API calls (if enabled)
+            if (this.adaptiveSecurity.shouldRateLimit('workspace_structure')) {
+                const rateLimitResult = this.rateLimiter.checkLimit('workspace_structure');
+                if (!rateLimitResult.allowed) {
+                    throw new Error(`Workspace structure rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`);
+                }
             }
-            
-            this.lastApiCallTime = now;
 
             const structure = await this.getWorkspaceStructure();
             
@@ -334,7 +340,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 throw new Error('Invalid change ID');
             }
             
-            const sanitizedContent = this._sanitizeInput(content);
+            const sanitizedContent = this.adaptiveSecurity.sanitizeInput(content);
             
             if (!this._validateFileOperation(sanitizedContent)) {
                 throw new Error('Unauthorized file operation detected');
@@ -360,12 +366,20 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         if (!this._webviewView) return;
         
         try {
-            // Rate limit check for terminal commands
-            const rateLimitResult = this.rateLimiter.checkLimit('terminal_commands');
-            if (!rateLimitResult.allowed) {
-                throw new Error(`Rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`);
+            // Rate limit check for terminal commands (if enabled)
+            if (this.adaptiveSecurity.shouldRateLimit('terminal_commands')) {
+                const rateLimitResult = this.rateLimiter.checkLimit('terminal_commands');
+                if (!rateLimitResult.allowed) {
+                    throw new Error(`Rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`);
+                }
             }
 
+            // Adaptive security validation
+            const adaptiveValidation = this.adaptiveSecurity.validateCommand(code);
+            if (!adaptiveValidation.isValid) {
+                throw new Error(`Command blocked by adaptive security: ${adaptiveValidation.reason}`);
+            }
+            
             // Security validation for terminal command
             const validationResult = this.securityManager.validateTerminalCommand(code);
             if (!validationResult.isValid) {
@@ -386,14 +400,16 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 }
             }
 
-            // Log the command execution attempt
-            this.securityManager.logAuditEvent({
-                type: 'terminal_command_execution',
-                command: code,
-                timestamp: new Date(),
-                approved: true,
-                details: { changeId }
-            });
+            // Log the command execution attempt (if audit logging enabled)
+            if (this.adaptiveSecurity.shouldLogAudit()) {
+                this.securityManager.logAuditEvent({
+                    type: 'terminal_command_execution',
+                    command: code,
+                    timestamp: new Date(),
+                    approved: true,
+                    details: { changeId }
+                });
+            }
             
             // Execute code in a sandboxed environment
             const output = await this.executeTerminalCommand(code);
@@ -402,17 +418,19 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         } catch (error) {
             console.error('Error running code:', error);
             
-            // Log the failed execution
-            this.securityManager.logAuditEvent({
-                type: 'terminal_command_execution_failed',
-                command: code,
-                timestamp: new Date(),
-                approved: false,
-                details: { 
-                    changeId, 
-                    error: error instanceof Error ? error.message : 'Unknown error' 
-                }
-            });
+            // Log the failed execution (if audit logging enabled)
+            if (this.adaptiveSecurity.shouldLogAudit()) {
+                this.securityManager.logAuditEvent({
+                    type: 'terminal_command_execution_failed',
+                    command: code,
+                    timestamp: new Date(),
+                    approved: false,
+                    details: { 
+                        changeId, 
+                        error: error instanceof Error ? error.message : 'Unknown error' 
+                    }
+                });
+            }
             
             this._webviewView.webview.postMessage({
                 command: 'handleError',
@@ -426,7 +444,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         
         try {
             // Validate content before editing
-            const sanitizedContent = this._sanitizeInput(content);
+            const sanitizedContent = this.adaptiveSecurity.sanitizeInput(content);
             
             if (!this._validateFileOperation(sanitizedContent)) {
                 throw new Error('Unauthorized file operation detected');
@@ -458,13 +476,13 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 throw new Error('Invalid change ID for regeneration');
             }
             
-            // Add rate limiting to regenerate calls as well
-            const now = Date.now();
-            if (this.regenerateRateLimitTime && (now - this.regenerateRateLimitTime) < 2000) {
-                throw new Error('Regeneration rate limit exceeded. Please wait before regenerating again.');
+            // Add rate limiting to regenerate calls (if enabled)
+            if (this.adaptiveSecurity.shouldRateLimit('regenerate')) {
+                const rateLimitResult = this.rateLimiter.checkLimit('regenerate');
+                if (!rateLimitResult.allowed) {
+                    throw new Error(`Regeneration rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`);
+                }
             }
-            
-            this.regenerateRateLimitTime = now;
             
             this._webviewView.webview.postMessage({
                 command: 'showNotification',
@@ -488,27 +506,31 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 throw new Error('No files provided for upload');
             }
             
-            // Check permissions for file operations
-            const permissionResult = await this.permissionsManager.checkPermission('workspace', 'WRITE');
-            if (!permissionResult.allowed) {
-                throw new Error(`File upload denied: ${permissionResult.reason}`);
+            // Check permissions for file operations (if enabled by adaptive security)
+            if (this.adaptiveSecurity.shouldCheckFilePermissions()) {
+                const permissionResult = await this.permissionsManager.checkPermission('workspace', 'WRITE');
+                if (!permissionResult.allowed) {
+                    throw new Error(`File upload denied: ${permissionResult.reason}`);
+                }
             }
             
             // Process each file
             for (const file of files) {
-                const sanitizedContent = this._sanitizeInput(file.content);
+                const sanitizedContent = this.adaptiveSecurity.sanitizeInput(file.content);
                 
                 if (!this._validateFileOperation(sanitizedContent)) {
                     throw new Error(`Invalid file content: ${file.name}`);
                 }
                 
-                // Log the file upload attempt
-                this.securityManager.logAuditEvent({
-                    type: 'file_upload',
-                    timestamp: new Date(),
-                    approved: true,
-                    details: { fileName: file.name, size: file.size, requestId }
-                });
+                // Log the file upload attempt (if audit logging enabled)
+                if (this.adaptiveSecurity.shouldLogAudit()) {
+                    this.securityManager.logAuditEvent({
+                        type: 'file_upload',
+                        timestamp: new Date(),
+                        approved: true,
+                        details: { fileName: file.name, size: file.size, requestId }
+                    });
+                }
             }
             
             this._webviewView.webview.postMessage({
@@ -517,12 +539,16 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             });
         } catch (error) {
             console.error('Error handling file upload:', error);
-            this.securityManager.logAuditEvent({
-                type: 'file_upload_failed',
-                timestamp: new Date(),
-                approved: false,
-                details: { requestId, error: error instanceof Error ? error.message : 'Unknown error' }
-            });
+            
+            // Log audit event only if audit logging enabled
+            if (this.adaptiveSecurity.shouldLogAudit()) {
+                this.securityManager.logAuditEvent({
+                    type: 'file_upload_failed',
+                    timestamp: new Date(),
+                    approved: false,
+                    details: { requestId, error: error instanceof Error ? error.message : 'Unknown error' }
+                });
+            }
             
             this._webviewView.webview.postMessage({
                 command: 'handleError',
@@ -540,38 +566,42 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 throw new Error('Invalid file path provided');
             }
             
-            const sanitizedContent = this._sanitizeInput(content);
-            const sanitizedPath = this._sanitizeInput(filePath);
+            const sanitizedContent = this.adaptiveSecurity.sanitizeInput(content);
+            const sanitizedPath = this.adaptiveSecurity.sanitizeInput(filePath);
             
             if (!this._validateFileOperation(sanitizedContent)) {
                 throw new Error('Invalid file content detected');
             }
             
-            // Check permissions for file creation
-            const permissionResult = await this.permissionsManager.checkPermission(sanitizedPath, 'WRITE');
-            if (!permissionResult.allowed) {
-                if (permissionResult.requiresUserConfirmation) {
-                    const approved = await this.permissionsManager.requestUserPermission(
-                        'create file',
-                        sanitizedPath,
-                        `Create file: ${sanitizedPath}`
-                    );
-                    
-                    if (!approved) {
+            // Check permissions for file creation (if enabled by adaptive security)
+            if (this.adaptiveSecurity.shouldCheckFilePermissions()) {
+                const permissionResult = await this.permissionsManager.checkPermission(sanitizedPath, 'WRITE');
+                if (!permissionResult.allowed) {
+                    if (permissionResult.requiresUserConfirmation) {
+                        const approved = await this.permissionsManager.requestUserPermission(
+                            'create file',
+                            sanitizedPath,
+                            `Create file: ${sanitizedPath}`
+                        );
+                        
+                        if (!approved) {
+                            throw new Error(`File creation denied: ${permissionResult.reason}`);
+                        }
+                    } else {
                         throw new Error(`File creation denied: ${permissionResult.reason}`);
                     }
-                } else {
-                    throw new Error(`File creation denied: ${permissionResult.reason}`);
                 }
             }
             
-            // Log the file creation attempt
-            this.securityManager.logAuditEvent({
-                type: 'file_creation',
-                timestamp: new Date(),
-                approved: true,
-                details: { filePath: sanitizedPath, requestId }
-            });
+            // Log the file creation attempt (if audit logging enabled)
+            if (this.adaptiveSecurity.shouldLogAudit()) {
+                this.securityManager.logAuditEvent({
+                    type: 'file_creation',
+                    timestamp: new Date(),
+                    approved: true,
+                    details: { filePath: sanitizedPath, requestId }
+                });
+            }
             
             // In a real implementation, this would actually create the file
             // For now, we just simulate success
@@ -581,12 +611,16 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             });
         } catch (error) {
             console.error('Error creating file:', error);
-            this.securityManager.logAuditEvent({
-                type: 'file_creation_failed',
-                timestamp: new Date(),
-                approved: false,
-                details: { filePath, requestId, error: error instanceof Error ? error.message : 'Unknown error' }
-            });
+            
+            // Log audit event only if audit logging enabled
+            if (this.adaptiveSecurity.shouldLogAudit()) {
+                this.securityManager.logAuditEvent({
+                    type: 'file_creation_failed',
+                    timestamp: new Date(),
+                    approved: false,
+                    details: { filePath, requestId, error: error instanceof Error ? error.message : 'Unknown error' }
+                });
+            }
             
             this._webviewView.webview.postMessage({
                 command: 'handleError',
@@ -618,14 +652,6 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     }
 
     private async getWorkspaceStructure(): Promise<string> {
-        // Add rate limiting and validation to workspace structure calls  
-        const now = Date.now();
-        if (this.workspaceStructureRateLimitTime && (now - this.workspaceStructureRateLimitTime) < 500) {
-            throw new Error('Workspace structure rate limit exceeded');
-        }
-        
-        this.workspaceStructureRateLimitTime = now;
-
         // Implementation for getting workspace structure
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
@@ -655,9 +681,8 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     // New validation methods and properties (added to existing class)
     
     private _sanitizeInput(input: string): string {
-        // Sanitize input to prevent injection attacks  
-        const sanitized = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-        return sanitized;
+        // Use adaptive security sanitization
+        return this.adaptiveSecurity.sanitizeInput(input);
     }
     
     private _validateMessage(messageContent: string): boolean {
@@ -737,26 +762,13 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         return true;
     }
     
-    private _checkRateLimit(): Promise<boolean> {
-      // Rate limiting implementation
-      const now = Date.now();
-      
-      if (now > this.resetTime) {
-        this.requestCount = 0;
-        this.resetTime = now + 60000; // Reset every minute
-      }
-      
-      this.requestCount++;
-      return Promise.resolve(this.requestCount > 100); // 100 requests per minute limit
-    }
-    
     private async _validateAndLogCommand(command: string): Promise<{safe: boolean, riskLevel?: string}> {
         // Validate command and log for audit trail
         const isSafe = this._validateTerminalCommand(command);
         
-        if (isSafe) {
+        if (isSafe && this.adaptiveSecurity.shouldLogAudit()) {
             this._logOperation('terminal', 'execute', command, true); 
-        } else {
+        } else if (!isSafe && this.adaptiveSecurity.shouldLogAudit()) {
             this._logOperation('terminal', 'execute', command, false);
         }
         
@@ -764,9 +776,16 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     }
     
     private _logOperation(operation: string, action: string, details: any, success: boolean = true): void {
-        // Add audit trail for operations
-        const timestamp = new Date().toISOString();
-        console.log(`[AUDIT] ${timestamp} - Operation: ${operation}, Action: ${action}, Details: ${JSON.stringify(details)}, Success: ${success}`);
+        // Add audit trail for operations using SecurityManager
+        const auditEntry: AuditEntry = {
+            type: `${operation}_${action}`,
+            timestamp: new Date(),
+            approved: success,
+            details: typeof details === 'string' ? { command: details } : details
+        };
+        
+        this.securityManager.logAuditEvent(auditEntry);
+        console.log(`[AUDIT] ${auditEntry.timestamp.toISOString()} - Operation: ${operation}, Action: ${action}, Details: ${JSON.stringify(details)}, Success: ${success}`);
     }
     
     // Test methods (removed from original class since they were duplicates)
