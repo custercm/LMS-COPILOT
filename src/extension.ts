@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { AgentManager } from './agent/AgentManager';
 import { LMStudioClient } from './lmstudio/LMStudioClient';
+import { ModelManager } from './lmstudio/ModelManager';
+import { StreamHandler } from './lmstudio/StreamHandler';
 import { ConversationHistory } from './agent/ConversationHistory';
 import { ChatProvider } from './chat/ChatProvider';
 import { ChatPanel } from './chat/ChatPanel';
@@ -129,6 +131,23 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    // Test model management
+    const testModelsDisposable = vscode.commands.registerCommand('lms-copilot.testModels', async () => {
+        try {
+            const modelManager = new ModelManager();
+            const models = await modelManager.getAvailableModels();
+            const currentModel = modelManager.getCurrentModel();
+            
+            vscode.window.showInformationMessage(
+                `Available models: ${models.join(', ')}. Current: ${currentModel}`
+            );
+        } catch (error) {
+            vscode.window.showErrorMessage(
+                `Failed to get models: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
+        }
+    });
+
     // Add disposables to subscriptions
     context.subscriptions.push(
         startChatDisposable, 
@@ -138,7 +157,8 @@ export function activate(context: vscode.ExtensionContext) {
         enableCompletionsDisposable,
         disableCompletionsDisposable,
         clearCacheDisposable,
-        showCacheStatsDisposable
+        showCacheStatsDisposable,
+        testModelsDisposable
     );
 }
 

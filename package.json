@@ -66,6 +66,11 @@
         "command": "lms-copilot.showCacheStats",
         "title": "Show Completion Cache Statistics",
         "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.testModels",
+        "title": "Test Model Management",
+        "category": "LMS Copilot"
       }
     ],
     "configuration": {

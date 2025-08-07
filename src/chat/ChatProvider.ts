@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { LMStudioClient } from '../lmstudio/LMStudioClient';
+import { ModelManager } from '../lmstudio/ModelManager';
+import { StreamHandler } from '../lmstudio/StreamHandler';
 import { SecurityManager, AuditEntry, ValidationResult } from '../security/SecurityManager';
 import { PermissionsManager, PermissionResult } from '../security/PermissionsManager';
 import { RateLimiter, RateLimitResult } from '../security/RateLimiter';
@@ -10,6 +12,8 @@ import { AgentManager } from '../agent/AgentManager';
 export class ChatProvider implements vscode.WebviewViewProvider {
     private _webviewView: vscode.WebviewView | undefined;
     private client: LMStudioClient;
+    private modelManager: ModelManager;
+    private streamHandler: StreamHandler | undefined;
     private securityManager: SecurityManager;
     private permissionsManager: PermissionsManager;
     private rateLimiter: RateLimiter;
@@ -21,6 +25,9 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     constructor(client: LMStudioClient, extensionUri: vscode.Uri) { 
         this.client = client;
         this.extensionUri = extensionUri;
+        
+        // Initialize LM Studio components
+        this.modelManager = new ModelManager();
         
         // Initialize agent manager
         this.agentManager = new AgentManager(client);
@@ -99,6 +106,12 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                 switch (sanitizedMessage.command) {
                     case 'sendMessage':
                         await this.handleSendMessage(sanitizedMessage.text);
+                        return;
+                    case 'getModels':
+                        await this.handleGetModels();
+                        return;
+                    case 'setModel':
+                        await this.handleSetModel(sanitizedMessage.model);
                         return;
                     case 'analyzeWorkspace':
                         await this.handleAnalyzeWorkspace(sanitizedMessage.structure);
@@ -255,27 +268,96 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             // Show typing indicator while waiting for response
             this.appendTypingIndicator();
             
-            // Use MessageHandler to process the message
-            const response = await this.messageHandler.handleMessage(sanitizedMessage, 'provider');
-            
-            // Remove typing indicator after response is complete
-            this.removeTypingIndicator();
-            
-            // Post the response back to the webview
-            this._webviewView.webview.postMessage({
-                command: 'addMessage',
-                message: {
-                    role: 'assistant',
-                    content: response,
-                    timestamp: Date.now()
-                }
+            // Initialize streaming handler
+            let streamingResponse = '';
+            this.streamHandler = new StreamHandler(this.client, (chunk: string) => {
+                streamingResponse += chunk;
+                // Send incremental response updates to webview
+                this._webviewView?.webview.postMessage({
+                    command: 'updateStreamingMessage',
+                    content: streamingResponse,
+                    isComplete: false
+                });
             });
+            
+            try {
+                // Try streaming first
+                await this.streamHandler.streamResponse(sanitizedMessage);
+                
+                // Remove typing indicator after response is complete
+                this.removeTypingIndicator();
+                
+                // Mark streaming as complete
+                this._webviewView.webview.postMessage({
+                    command: 'updateStreamingMessage',
+                    content: streamingResponse,
+                    isComplete: true
+                });
+            } catch (streamError) {
+                // Fallback to regular MessageHandler if streaming fails
+                console.warn('Streaming failed, falling back to regular response:', streamError);
+                
+                // Use MessageHandler to process the message
+                const response = await this.messageHandler.handleMessage(sanitizedMessage, 'provider');
+                
+                // Remove typing indicator after response is complete
+                this.removeTypingIndicator();
+                
+                // Post the response back to the webview
+                this._webviewView.webview.postMessage({
+                    command: 'addMessage',
+                    message: {
+                        role: 'assistant',
+                        content: response,
+                        timestamp: Date.now()
+                    }
+                });
+            }
         } catch (error) {
             console.error('Error sending message:', error);
             this.removeTypingIndicator();
             this._webviewView.webview.postMessage({
                 command: 'handleError',
                 message: `Failed to get response from AI assistant: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+        }
+    }
+
+    private async handleGetModels(): Promise<void> {
+        if (!this._webviewView) return;
+        
+        try {
+            const models = await this.modelManager.getAvailableModels();
+            const currentModel = this.modelManager.getCurrentModel();
+            
+            this._webviewView.webview.postMessage({
+                command: 'modelsResponse',
+                models: models,
+                currentModel: currentModel
+            });
+        } catch (error) {
+            this._webviewView.webview.postMessage({
+                command: 'error',
+                message: `Failed to get available models: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+        }
+    }
+
+    private async handleSetModel(model: string): Promise<void> {
+        if (!this._webviewView) return;
+        
+        try {
+            this.modelManager.setCurrentModel(model);
+            
+            this._webviewView.webview.postMessage({
+                command: 'modelSet',
+                model: model,
+                message: `Model changed to ${model}`
+            });
+        } catch (error) {
+            this._webviewView.webview.postMessage({
+                command: 'error',
+                message: `Failed to set model: ${error instanceof Error ? error.message : 'Unknown error'}`
             });
         }
     }
