@@ -293,4 +293,4 @@ fix(webview): resolve CSS variable inheritance
 docs(readme): update installation instructions
 ```
 
-This manifest ensures both AI models write consistent, maintainable code that follows the established patterns in the LMS Copilot extension.
+This manifest ensures all AI models write consistent, maintainable code that follows the established patterns in the LMS Copilot extension.

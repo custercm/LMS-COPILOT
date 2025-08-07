@@ -22,4 +22,16 @@ export class ContextAnalyzer {
     }
     return "";
   }
+  
+  async analyzeContextForCompletion(document: vscode.TextDocument, position: vscode.Position): Promise<string> {
+    const context = this.analyzeContext(document, position);
+    const currentFileContent = this.getCurrentFile();
+    
+    // Implementation for analyzing context to provide better completions
+    return `Context Analysis:
+- Language: ${context.language}
+- Line content: "${context.lineContent}"
+- Cursor position: ${context.cursorPosition}
+- Current file length: ${currentFileContent.length} characters`;
+  }
 }

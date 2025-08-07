@@ -1,0 +1,23 @@
+/* VS Code Theme Integration */
+body[data-vscode-theme] {
+  --vscode-editor-background: var(--vscode-editor-background);
+  --vscode-editor-foreground: var(--vscode-editor-foreground);
+  --vscode-chat-user-message-background: var(--vscode-chat-user-message-background);
+  --vscode-chat-assistant-message-background: var(--vscode-chat-assistant-message-background);
+}
+
+/* Light theme overrides */
+body[data-vscode-theme="light"] {
+  --vscode-editor-background: #ffffff;
+  --vscode-editor-foreground: #000000;
+  --vscode-chat-user-message-background: #f5f5f5;
+  --vscode-chat-assistant-message-background: #ffffff;
+}
+
+/* Dark theme overrides */
+body[data-vscode-theme="dark"] {
+  --vscode-editor-background: #1e1e1e;
+  --vscode-editor-foreground: #d4d4d4;
+  --vscode-chat-user-message-background: #2a2d3b;
+  --vscode-chat-assistant-message-background: #1e1e1e;
+}

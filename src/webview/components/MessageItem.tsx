@@ -1,104 +1,131 @@
-import React, { useState } from 'react';
-import FilePathLink from './FilePathLink'; // This will need to be added to existing file or import properly
-import BreadcrumbNavigation from './BreadcrumbNavigation'; // This will need to be added to existing file or import properly
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-}
-
-interface FileReference {
-  path: string;
-  line?: number;
-}
+import React from 'react';
+import { parseMessageContent } from '../utils/messageParser';
+import CodeBlock from './CodeBlock';
+import DiffViewer from './DiffViewer';
 
 interface MessageItemProps {
-  message: Message;
-  fileReferences: FileReference[];
-  onOpenFile: (reference: FileReference) => void;
+  message: AssistantMessage;
+  onOpenFile?: (filePath: string) => void;
+  // Add new prop for media file handling
+  onHandleMediaOperation?: (filePath: string, operation: 'preview' | 'convert' | 'metadata') => void;
 }
 
-function MessageItem({ message, fileReferences, onOpenFile }: MessageItemProps) {
-  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
-  
-  // Add the FilePreview component here as a nested component
-  const FilePreview = ({ filePath, content }: { filePath: string; content: string }) => {
-    const [isVisible, setIsVisible] = useState(false);
-
-    return (
-      <div className="file-preview-container">
-        {isVisible && (
-          <div className="preview-content">
-            <h4>Preview of {filePath}</h4>
-            <pre>{content}</pre>
-          </div>
-        )}
-      </div>
-    );
+function MessageItem({
+  message,
+  onOpenFile,
+  onHandleMediaOperation
+}: MessageItemProps) {
+  const extractFilePaths = (content: string): string[] => {
+    // Extract file paths from message content
+    const filePathRegex = /(\w+\/[\w\-\.\/]+(?:\.\w+)?)/g;
+    const matches = content.match(filePathRegex);
+    return matches || [];
   };
 
-  // Add the BreadcrumbNavigation component here as a nested component
-  const BreadcrumbNavigation = ({ path }: { path: string }) => {
-    const parts = path.split('/');
-    
-    return (
-      <div className="breadcrumb-navigation">
-        {parts.map((part, index) => (
-          <span key={index}>
-            {index > 0 && ' / '}
-            <a href="#" onClick={(e) => e.preventDefault()}>
-              {part}
-            </a>
-          </span>
-        ))}
-      </div>
-    );
+  const hasCodeBlocks = (content: string): boolean => {
+    // Check if the content includes code blocks
+    return /```([\s\S]*?)```/.test(content);
   };
 
-  // Add the FilePathLink component here as a nested component
-  const FilePathLink = ({ reference, onOpen }: { reference: FileReference; onOpen?: () => void }) => {
-    const handleClick = (e: React.MouseEvent) => {
-      e.preventDefault();
-      if (onOpen) {
-        onOpen();
+  const renderContent = () => {
+    if (!message.content) return null;
+
+    // Check for file paths in the content
+    const filePaths = extractFilePaths(message.content);
+
+    // If it's a media file response, handle accordingly
+    if (message.content.includes('media_file')) {
+      try {
+        const parsedContent = JSON.parse(message.content);
+
+        if (parsedContent.type === 'image') {
+          return (
+            <div className="media-content">
+              <h4>Image Preview</h4>
+              <img
+                src={parsedContent.data}
+                alt={`Thumbnail of ${parsedContent.fileName}`}
+                className="thumbnail"
+                onClick={() => onHandleMediaOperation && onHandleMediaOperation(parsedContent.filePath, 'preview')}
+              />
+            </div>
+          );
+        } else if (parsedContent.type === 'pdf' || parsedContent.type === 'csv') {
+          return (
+            <div className="media-content">
+              <h4>File Analysis</h4>
+              <p>{parsedContent.content}</p>
+              {parsedContent.summary && (
+                <div className="file-summary">
+                  <p>Rows: {parsedContent.summary.rowCount}, Columns: {parsedContent.summary.columnCount}</p>
+                  <button
+                    onClick={() => onHandleMediaOperation && onHandleMediaOperation(parsedContent.filePath, 'convert')}
+                    className="action-button"
+                  >
+                    Convert to Text/JSON
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        }
+      } catch (e) {
+        // If it's not valid JSON, treat as regular markdown content
       }
-    };
+    }
 
+    // Render code blocks if present
+    const hasCode = hasCodeBlocks(message.content);
+    if (hasCode) {
+      return (
+        <div className="message-content">
+          {parseMessageContent(message.content)}
+          <CodeBlock
+            content={message.content}
+            onOpenFile={onOpenFile}
+          />
+        </div>
+      );
+    }
+
+    // Render regular markdown content
     return (
-      <span className="file-path-link">
-        <a 
-          href="#" 
-          onClick={handleClick}
-          title={`Open ${reference.path}`}
-        >
-          {reference.path}
-        </a>
-      </span>
+      <div
+        className="message-content"
+        dangerouslySetInnerHTML={{ __html: parseMessageContent(message.content) }}
+      />
     );
   };
+
+  // Extract file paths from the message content
+  const filePaths = extractFilePaths(message.content);
 
   return (
     <div className={`message-item ${message.role}`}>
-      <div className="content">
-        {message.content}
+      {renderContent()}
 
-        {/* File references in messages */}
-        {fileReferences && fileReferences.length > 0 && (
-          <div className="file-references">
-            {fileReferences.map((ref, index) => (
-              <div key={index} className="file-reference-item">
-                <FilePathLink
-                  reference={ref}
-                  onOpen={() => onOpenFile(ref)}
-                />
-                <BreadcrumbNavigation path={ref.path} />
-              </div>
-            ))}
-          </div>
+      {/* Add action buttons for media files */}
+      {filePaths.length > 0 && onHandleMediaOperation && (
+        <div className="media-actions">
+          {filePaths.map((filePath, index) => (
+            <button
+              key={index}
+              onClick={() => onHandleMediaOperation(filePath, 'metadata')}
+              className="action-button"
+            >
+              View Metadata
+            </button>
+          ))}
+        </div>
       )}
-      </div>
+
+      {/* Add diff viewer if it's a file change */}
+      {message.content.includes('diff') && (
+        <DiffViewer
+          originalContent={message.content}
+          proposedContent=""
+        />
+      )}
     </div>
   );
 }

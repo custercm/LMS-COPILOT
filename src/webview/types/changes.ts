@@ -14,4 +14,6 @@ export interface ChangeSet {
   changes: FileChange[];
   status: 'pending' | 'applied' | 'reverted';
   description: string;
+  fileCount: number;
+  changeSummary: { additions: number; deletions: number };
 }

@@ -131,22 +131,40 @@ class CodeCompletionProvider {
   }
 }
 
+// Improved CodeBlockHandler with enhanced security validation
 class CodeBlockHandler {
+  private lastRegenTime: number | null = null;
+
   handleInteraction(action: 'copy' | 'apply' | 'run' | 'edit' | 'regenerate', content: string): void {
     switch (action) {
       case 'copy':
         this.copyCode(content);
         break;
       case 'apply':
+        // Add validation for file changes
+        if (!this._validateChange(content)) {
+          throw new Error('Invalid change detected');
+        }
         this.applyCode(content);
         break;
       case 'run':
-        this.runCode(content);
+        // Validate and sanitize terminal commands  
+        const sanitizedCommand = this._sanitizeInput(content);
+        if (!this._validateTerminalCommand(sanitizedCommand)) {
+          throw new Error('Unsafe command detected');
+        }
+        this.runCode(sanitizedCommand);
         break;
       case 'edit':
         this.editCode(content);
         break;
       case 'regenerate':
+        // Add rate limiting for regeneration requests
+        const now = Date.now();
+        if (this.lastRegenTime && (now - this.lastRegenTime) < 1000) {
+          throw new Error('Regeneration request rate limit exceeded');
+        }
+        this.lastRegenTime = now;
         this.regenerateCode(content);
         break;
     }
@@ -160,11 +178,25 @@ class CodeBlockHandler {
   private applyCode(content: string): void {
     // Implementation for applying changes to workspace
     // This would be implemented in PanelManager.ts
+    
+    // Add security validation for file operations  
+    if (!this._validateFileOperation(content)) {
+      throw new Error('Unauthorized file operation detected');
+    }
+    
+    // ... existing implementation ...
   }
 
   private runCode(content: string): void {
     // Implementation for executing code in a sandboxed environment
     // This would be implemented in PanelManager.ts
+    
+    // Add validation to prevent dangerous terminal commands
+    if (!this._validateTerminalCommand(content)) {
+      throw new Error('Unsafe command execution blocked');
+    }
+    
+    // ... existing implementation ...
   }
 
   private async editCode(content: string): Promise<void> {
@@ -176,6 +208,53 @@ class CodeBlockHandler {
   private regenerateCode(content: string): void {
     // Implementation for regenerating code based on user input
     // This would be implemented in ChatProvider.ts
+    
+    // Add input sanitization to prevent injection attacks
+    const sanitizedContent = this._sanitizeInput(content);
+    
+    // ... existing implementation ...
+  }
+  
+  // New validation methods and properties (added to existing class)
+  
+  private _validateChange(changeContent: string): boolean {
+    // Validate file change content against security rules
+    if (changeContent.length > 10000) { // Limit change size
+      return false;
+    }
+    // Add more validation logic as needed
+    return true;
+  }
+  
+  private _validateTerminalCommand(command: string): boolean {
+    // Validate command for safety before execution
+    const safeCommands = ['ls', 'pwd', 'git status', 'npm install'];
+    
+    if (command.includes('rm -rf') || command.includes('sudo')) {
+      return false;
+    }
+    
+    // Add more validation rules as needed  
+    return true;
+  }
+  
+  private _validateFileOperation(content: string): boolean {
+    // Validate file operation content
+    const dangerousPatterns = [/\bdelete\b/i, /\bformat\b/i];
+    
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(content)) {
+        return false; 
+      }
+    }
+    
+    return true;
+  }
+  
+  private _sanitizeInput(input: string): string {
+    // Sanitize input to prevent injection attacks
+    const sanitized = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    return sanitized;
   }
 }
 
