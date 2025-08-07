@@ -98,7 +98,12 @@
         },
         "lmsCopilot.securityLevel": {
           "type": "string",
-          "enum": ["disabled", "minimal", "standard", "strict"],
+          "enum": [
+            "disabled",
+            "minimal",
+            "standard",
+            "strict"
+          ],
           "default": "minimal",
           "description": "Security level for the extension",
           "enumDescriptions": [
@@ -138,15 +143,18 @@
     "package": "webpack --mode production && webpack --config webpack.webview.config.js --mode production",
     "dev": "webpack --mode development && webpack --config webpack.webview.config.js --mode development",
     "watch:webview": "webpack --config webpack.webview.config.js --mode development --watch",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:integration": "jest --testPathPattern=integration",
-    "test:unit": "jest --testPathPattern=unit",
-    "test:e2e": "jest --testPathPattern=e2e",
+    "test": "jest --testPathIgnorePatterns=/dist/ --testPathIgnorePatterns=\\.d\\.ts$",
+    "test:watch": "jest --watch --testPathIgnorePatterns=/dist/ --testPathIgnorePatterns=\\.d\\.ts$",
+    "test:coverage": "jest --coverage --testPathIgnorePatterns=/dist/ --testPathIgnorePatterns=\\.d\\.ts$",
+    "test:integration": "jest --testPathPattern=integration --testPathIgnorePatterns=/dist/ --testPathIgnorePatterns=\\.d\\.ts$",
+    "test:unit": "jest --testPathPattern=unit --testPathIgnorePatterns=/dist/ --testPathIgnorePatterns=\\.d\\.ts$",
+    "test:e2e": "jest --testPathPattern=e2e --testPathIgnorePatterns=/dist/ --testPathIgnorePatterns=\\.d\\.ts$",
     "pretest": "npm run compile"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-react": "^7.27.1",
+    "@babel/preset-typescript": "^7.27.1",
     "@testing-library/jest-dom": "^6.1.4",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.5.1",
@@ -158,6 +166,7 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/vscode": "^1.80.0",
+    "babel-jest": "^30.0.5",
     "css-loader": "^6.8.1",
     "html-webpack-plugin": "^5.5.3",
     "identity-obj-proxy": "^3.0.0",
