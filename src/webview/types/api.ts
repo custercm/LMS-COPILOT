@@ -65,6 +65,24 @@ export interface PreviewFileCommand {
   requestId: string;
 }
 
+export interface FileUploadCommand {
+  command: 'fileUpload';
+  files: Array<{
+    name: string;
+    content: string;
+    size: number;
+    type: string;
+  }>;
+  requestId: string;
+}
+
+export interface CreateFileCommand {
+  command: 'createFile';
+  filePath: string;
+  content: string;
+  requestId: string;
+}
+
 export interface PerformanceTestCommand {
   type: 'performance-test';
   payload: any;
@@ -84,6 +102,8 @@ export type WebviewCommand =
   | RegenerateResponseCommand
   | OpenFileCommand
   | PreviewFileCommand
+  | FileUploadCommand
+  | CreateFileCommand
   | PerformanceTestCommand
   | CommandMessage;
 

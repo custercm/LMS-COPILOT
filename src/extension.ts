@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { AgentManager } from './agent/AgentManager';
 import { LMStudioClient } from './lmstudio/LMStudioClient';
 import { ConversationHistory } from './agent/ConversationHistory';
+import { ChatProvider } from './chat/ChatProvider';
 // Security system is implemented in ./security/ and integrated into ChatProvider
 
 export function activate(context: vscode.ExtensionContext) {
@@ -9,6 +10,18 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Create LM Studio client
     const lmStudioClient = new LMStudioClient();
+    
+    // Create and register ChatProvider for webview
+    const chatProvider = new ChatProvider(lmStudioClient, context.extensionUri);
+    const chatProviderDisposable = vscode.window.registerWebviewViewProvider(
+        'lmsCopilotChat',
+        chatProvider,
+        {
+            webviewOptions: {
+                retainContextWhenHidden: true
+            }
+        }
+    );
     
     // Create agent manager with conversation history
     const agentManager = new AgentManager(lmStudioClient);
@@ -84,7 +97,8 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
 
-    context.subscriptions.push(disposable);
+    // Add disposables to subscriptions
+    context.subscriptions.push(disposable, chatProviderDisposable);
 }
 
 function getWebviewContent() {

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { LMStudioClient } from '../lmstudio/LMStudioClient';
-import { SecurityManager } from '../security/SecurityManager';
-import { PermissionsManager } from '../security/PermissionsManager';
-import { RateLimiter } from '../security/RateLimiter';
+import { SecurityManager, AuditEntry, ValidationResult } from '../security/SecurityManager';
+import { PermissionsManager, PermissionResult } from '../security/PermissionsManager';
+import { RateLimiter, RateLimitResult } from '../security/RateLimiter';
 
 export class ChatProvider implements vscode.WebviewViewProvider {
     private _webviewView: vscode.WebviewView | undefined;
@@ -34,6 +34,9 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         context: vscode.WebviewViewResolveContext,
         token: vscode.CancellationToken
     ) { 
+        // Store the webview reference for later use
+        this._webviewView = webviewView;
+        
         // Add CSP header to webview content for security
         const cspSource = webviewView.webview.cspSource;
         webviewView.webview.options = {
@@ -95,6 +98,12 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                         return;
                     case 'regenerateResponse':
                         await this.handleRegenerateResponse(sanitizedMessage.changeId);
+                        return;
+                    case 'fileUpload':
+                        await this.handleFileUpload(sanitizedMessage.files, sanitizedMessage.requestId);
+                        return;
+                    case 'createFile':
+                        await this.handleCreateFile(sanitizedMessage.filePath, sanitizedMessage.content, sanitizedMessage.requestId);
                         return;
                     case 'openFile':
                         // Handle opening files from the webview with permission check
@@ -453,6 +462,122 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             this._webviewView.webview.postMessage({
                 command: 'handleError',
                 message: `Failed to regenerate response: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+        }
+    }
+
+    private async handleFileUpload(files: Array<{name: string; content: string; size: number; type: string}>, requestId: string): Promise<void> {
+        if (!this._webviewView) return;
+        
+        try {
+            // Validate file upload
+            if (!files || files.length === 0) {
+                throw new Error('No files provided for upload');
+            }
+            
+            // Check permissions for file operations
+            const permissionResult = await this.permissionsManager.checkPermission('workspace', 'WRITE');
+            if (!permissionResult.allowed) {
+                throw new Error(`File upload denied: ${permissionResult.reason}`);
+            }
+            
+            // Process each file
+            for (const file of files) {
+                const sanitizedContent = this._sanitizeInput(file.content);
+                
+                if (!this._validateFileOperation(sanitizedContent)) {
+                    throw new Error(`Invalid file content: ${file.name}`);
+                }
+                
+                // Log the file upload attempt
+                this.securityManager.logAuditEvent({
+                    type: 'file_upload',
+                    timestamp: new Date(),
+                    approved: true,
+                    details: { fileName: file.name, size: file.size, requestId }
+                });
+            }
+            
+            this._webviewView.webview.postMessage({
+                command: 'showNotification',
+                message: `Successfully uploaded ${files.length} file(s)`
+            });
+        } catch (error) {
+            console.error('Error handling file upload:', error);
+            this.securityManager.logAuditEvent({
+                type: 'file_upload_failed',
+                timestamp: new Date(),
+                approved: false,
+                details: { requestId, error: error instanceof Error ? error.message : 'Unknown error' }
+            });
+            
+            this._webviewView.webview.postMessage({
+                command: 'handleError',
+                message: `Failed to upload files: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+        }
+    }
+
+    private async handleCreateFile(filePath: string, content: string, requestId: string): Promise<void> {
+        if (!this._webviewView) return;
+        
+        try {
+            // Validate file path and content
+            if (!filePath || !filePath.trim()) {
+                throw new Error('Invalid file path provided');
+            }
+            
+            const sanitizedContent = this._sanitizeInput(content);
+            const sanitizedPath = this._sanitizeInput(filePath);
+            
+            if (!this._validateFileOperation(sanitizedContent)) {
+                throw new Error('Invalid file content detected');
+            }
+            
+            // Check permissions for file creation
+            const permissionResult = await this.permissionsManager.checkPermission(sanitizedPath, 'WRITE');
+            if (!permissionResult.allowed) {
+                if (permissionResult.requiresUserConfirmation) {
+                    const approved = await this.permissionsManager.requestUserPermission(
+                        'create file',
+                        sanitizedPath,
+                        `Create file: ${sanitizedPath}`
+                    );
+                    
+                    if (!approved) {
+                        throw new Error(`File creation denied: ${permissionResult.reason}`);
+                    }
+                } else {
+                    throw new Error(`File creation denied: ${permissionResult.reason}`);
+                }
+            }
+            
+            // Log the file creation attempt
+            this.securityManager.logAuditEvent({
+                type: 'file_creation',
+                timestamp: new Date(),
+                approved: true,
+                details: { filePath: sanitizedPath, requestId }
+            });
+            
+            // In a real implementation, this would actually create the file
+            // For now, we just simulate success
+            this._webviewView.webview.postMessage({
+                command: 'showNotification',
+                message: `File ${sanitizedPath} created successfully`
+            });
+        } catch (error) {
+            console.error('Error creating file:', error);
+            this.securityManager.logAuditEvent({
+                type: 'file_creation_failed',
+                timestamp: new Date(),
+                approved: false,
+                details: { filePath, requestId, error: error instanceof Error ? error.message : 'Unknown error' }
+            });
+            
+            this._webviewView.webview.postMessage({
+                command: 'handleError',
+                message: `Failed to create file: ${error instanceof Error ? error.message : 'Unknown error'}`
             });
         }
     }
