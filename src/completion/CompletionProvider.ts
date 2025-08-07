@@ -1,37 +1,262 @@
 import * as vscode from 'vscode';
 import { ContextAnalyzer } from './ContextAnalyzer';
+import { CompletionCache } from './CompletionCache';
+import { LMStudioClient } from '../lmstudio/LMStudioClient';
 
 export class CompletionProvider implements vscode.InlineCompletionItemProvider {
   private contextAnalyzer: ContextAnalyzer = new ContextAnalyzer();
+  private completionCache: CompletionCache = new CompletionCache();
+  private lmStudioClient?: LMStudioClient;
   
-  provideInlineCompletionItems(
+  constructor(lmStudioClient?: LMStudioClient) {
+    this.lmStudioClient = lmStudioClient;
+  }
+  
+  async provideInlineCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
     context: vscode.InlineCompletionContext,
     token: vscode.CancellationToken
-  ): vscode.ProviderResult<vscode.InlineCompletionItem[]> {
-    // Implementation for providing inline code completions
-    const contextAnalysis = this.contextAnalyzer.analyzeContextForCompletion(document, position);
+  ): Promise<vscode.InlineCompletionItem[]> {
+    // Check if completions are enabled
+    const config = vscode.workspace.getConfiguration('lmsCopilot');
+    const completionsEnabled = config.get<boolean>('enableCompletions', true);
     
-    // Mock completion items - in a real implementation these would come from the LM Studio client
-    return [
-      {
-        insertText: "// This is a sample completion\nconsole.log('Hello world');",
-        range: new vscode.Range(position, position),
-        command: {
-          title: 'Accept Completion',
-          command: 'editor.action.inlineSuggest.commit'
+    if (!completionsEnabled) {
+      return [];
+    }
+
+    // Check if request was cancelled
+    if (token.isCancellationRequested) {
+      return [];
+    }
+
+    // Get context analysis
+    const contextAnalysis = await this.contextAnalyzer.analyzeContextForCompletion(document, position);
+    
+    // Check cache first
+    const cachedCompletion = this.completionCache.getCachedCompletion(document, position, contextAnalysis);
+    if (cachedCompletion) {
+      return [
+        {
+          insertText: cachedCompletion,
+          range: new vscode.Range(position, position),
+          command: {
+            title: 'Accept Cached Completion',
+            command: 'editor.action.inlineSuggest.commit'
+          }
         }
-      },
-      {
-        insertText: "function example() {\n  return true;\n}",
-        range: new vscode.Range(position, position),
-        command: {
-          title: 'Accept Completion',
-          command: 'editor.action.inlineSuggest.commit'
+      ];
+    }
+
+    // If we have an LM Studio client, try to get real completions
+    if (this.lmStudioClient) {
+      try {
+        const currentLine = document.lineAt(position).text;
+        const prefix = currentLine.substring(0, position.character);
+        const suffix = currentLine.substring(position.character);
+        
+        // Get max completion length from configuration
+        const maxLength = config.get<number>('completionMaxLength', 200);
+        
+        // Create a more sophisticated prompt for code completion
+        const prompt = this.createCompletionPrompt(
+          document, 
+          position, 
+          contextAnalysis, 
+          maxLength
+        );
+
+        const response = await this.lmStudioClient.sendMessage(prompt);
+        
+        if (response && response.trim()) {
+          // Clean and process the response
+          const cleanedResponse = this.cleanCompletionResponse(response, maxLength);
+          
+          // Cache the response
+          this.completionCache.setCachedCompletion(document, position, contextAnalysis, cleanedResponse);
+          
+          return [
+            {
+              insertText: cleanedResponse,
+              range: new vscode.Range(position, position),
+              command: {
+                title: 'Accept AI Completion',
+                command: 'editor.action.inlineSuggest.commit'
+              }
+            }
+          ];
         }
+      } catch (error) {
+        console.error('LM Studio completion error:', error);
+        // Fall back to smart completions if LM Studio fails
       }
+    }
+    
+    // Smart fallback completions based on context
+    return this.generateSmartFallbackCompletions(document, position);
+  }
+
+  /**
+   * Create a sophisticated prompt for completion
+   */
+  private createCompletionPrompt(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    contextAnalysis: string,
+    maxLength: number
+  ): string {
+    const currentLine = document.lineAt(position).text;
+    const codeStructure = this.contextAnalyzer.detectCodeStructure(document, position);
+    
+    return `Complete this ${document.languageId} code (max ${maxLength} characters):
+
+${contextAnalysis}
+
+Code structure context:
+${codeStructure}
+
+Provide a concise, syntactically correct completion that fits naturally at the cursor position. Only return the completion text, no explanations.`;
+  }
+
+  /**
+   * Clean and process the completion response
+   */
+  private cleanCompletionResponse(response: string, maxLength: number): string {
+    // Remove any explanation text or markdown formatting
+    let cleaned = response.trim();
+    
+    // Remove common prefixes that might come from the AI
+    const prefixesToRemove = [
+      'Here is the completion:',
+      'The completion is:',
+      'Complete:',
+      '```',
+      'javascript',
+      'typescript',
+      'python',
+      'java'
     ];
+    
+    for (const prefix of prefixesToRemove) {
+      if (cleaned.toLowerCase().startsWith(prefix.toLowerCase())) {
+        cleaned = cleaned.substring(prefix.length).trim();
+      }
+    }
+    
+    // Remove trailing explanations
+    const lines = cleaned.split('\n');
+    let codeLines = [];
+    
+    for (const line of lines) {
+      // Stop if we hit an explanation line
+      if (line.trim().startsWith('//') && line.includes('explanation')) {
+        break;
+      }
+      codeLines.push(line);
+    }
+    
+    cleaned = codeLines.join('\n').trim();
+    
+    // Limit length
+    if (cleaned.length > maxLength) {
+      cleaned = cleaned.substring(0, maxLength);
+      // Try to end at a complete word or statement
+      const lastSpace = cleaned.lastIndexOf(' ');
+      const lastSemicolon = cleaned.lastIndexOf(';');
+      const cutPoint = Math.max(lastSpace, lastSemicolon);
+      if (cutPoint > maxLength * 0.8) {
+        cleaned = cleaned.substring(0, cutPoint + 1);
+      }
+    }
+    
+    return cleaned;
+  }
+
+  /**
+   * Generate smart fallback completions when LM Studio is not available
+   */
+  private generateSmartFallbackCompletions(
+    document: vscode.TextDocument,
+    position: vscode.Position
+  ): vscode.InlineCompletionItem[] {
+    const currentLine = document.lineAt(position).text;
+    const prefix = currentLine.substring(0, position.character).trim();
+    const language = document.languageId;
+    
+    const completions: vscode.InlineCompletionItem[] = [];
+    
+    // Language-specific smart completions
+    switch (language) {
+      case 'javascript':
+      case 'typescript':
+        if (prefix.endsWith('console.')) {
+          completions.push(this.createCompletionItem("log('');", position, -2));
+        } else if (prefix.endsWith('function ')) {
+          completions.push(this.createCompletionItem("name() {\n  \n}", position, 0));
+        } else if (prefix.includes('if ')) {
+          completions.push(this.createCompletionItem("(condition) {\n  \n}", position, 0));
+        }
+        break;
+        
+      case 'python':
+        if (prefix.endsWith('def ')) {
+          completions.push(this.createCompletionItem("function_name():\n    pass", position, 0));
+        } else if (prefix.endsWith('print(')) {
+          completions.push(this.createCompletionItem("'')", position, -2));
+        }
+        break;
+        
+      case 'java':
+        if (prefix.endsWith('System.out.')) {
+          completions.push(this.createCompletionItem("println(\"\");", position, -3));
+        }
+        break;
+    }
+    
+    // Generic completions
+    if (completions.length === 0) {
+      completions.push(
+        this.createCompletionItem("// TODO: Implement", position, 0),
+        this.createCompletionItem("/* Comment */", position, 0)
+      );
+    }
+    
+    return completions;
+  }
+
+  /**
+   * Helper to create completion items
+   */
+  private createCompletionItem(
+    text: string, 
+    position: vscode.Position, 
+    cursorOffset: number = 0
+  ): vscode.InlineCompletionItem {
+    const range = new vscode.Range(position, position);
+    
+    return {
+      insertText: text,
+      range: range,
+      command: {
+        title: 'Accept Smart Completion',
+        command: 'editor.action.inlineSuggest.commit'
+      }
+    };
+  }
+
+  /**
+   * Public method to clear completion cache
+   */
+  public clearCache(): void {
+    this.completionCache.clearCache();
+  }
+
+  /**
+   * Public method to get cache statistics
+   */
+  public getCacheStats(): { size: number; maxSize: number } {
+    return this.completionCache.getCacheStats();
   }
 
   // Enhanced method to provide multi-line completions

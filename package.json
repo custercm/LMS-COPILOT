@@ -12,7 +12,8 @@
     "Machine Learning"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onLanguage"
   ],
   "main": "./dist/extension.js",
   "browser": "./dist/webview/webview.js",
@@ -45,6 +46,26 @@
         "command": "lms-copilot.togglePanel",
         "title": "Toggle LMS Copilot Panel",
         "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.enableCompletions",
+        "title": "Enable AI Code Completions",
+        "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.disableCompletions",
+        "title": "Disable AI Code Completions",
+        "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.clearCompletionCache",
+        "title": "Clear Completion Cache",
+        "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.showCacheStats",
+        "title": "Show Completion Cache Statistics",
+        "category": "LMS Copilot"
       }
     ],
     "configuration": {
@@ -76,6 +97,21 @@
           "type": "boolean",
           "default": false,
           "description": "Allow potentially dangerous terminal commands (only enable if you trust the AI model completely)"
+        },
+        "lmsCopilot.enableCompletions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered code completions"
+        },
+        "lmsCopilot.completionDelay": {
+          "type": "number",
+          "default": 300,
+          "description": "Delay in milliseconds before showing completions"
+        },
+        "lmsCopilot.completionMaxLength": {
+          "type": "number",
+          "default": 200,
+          "description": "Maximum length of completion suggestions"
         }
       }
     }

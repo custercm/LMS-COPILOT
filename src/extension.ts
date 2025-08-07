@@ -5,6 +5,8 @@ import { ConversationHistory } from './agent/ConversationHistory';
 import { ChatProvider } from './chat/ChatProvider';
 import { ChatPanel } from './chat/ChatPanel';
 import { MessageHandler } from './chat/MessageHandler';
+import { CompletionProvider } from './completion/CompletionProvider';
+import { ContextAnalyzer } from './completion/ContextAnalyzer';
 // Security system is implemented in ./security/ and integrated into ChatProvider
 
 export function activate(context: vscode.ExtensionContext) {
@@ -29,6 +31,13 @@ export function activate(context: vscode.ExtensionContext) {
                 retainContextWhenHidden: true
             }
         }
+    );
+
+    // Create and register CompletionProvider for inline code completion
+    const completionProvider = new CompletionProvider(lmStudioClient);
+    const completionProviderDisposable = vscode.languages.registerInlineCompletionItemProvider(
+        { scheme: 'file' }, // Apply to all file schemes
+        completionProvider
     );
     
     // Register commands
@@ -91,8 +100,46 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.executeCommand('workbench.view.extension.lmsCopilotContainer');
     });
 
+    // Register completion control commands
+    const enableCompletionsDisposable = vscode.commands.registerCommand('lms-copilot.enableCompletions', () => {
+        vscode.workspace.getConfiguration('lmsCopilot').update('enableCompletions', true, true);
+        vscode.window.showInformationMessage('LMS Copilot completions enabled');
+    });
+
+    const disableCompletionsDisposable = vscode.commands.registerCommand('lms-copilot.disableCompletions', () => {
+        vscode.workspace.getConfiguration('lmsCopilot').update('enableCompletions', false, true);
+        vscode.window.showInformationMessage('LMS Copilot completions disabled');
+    });
+
+    // Register completion cache commands
+    const clearCacheDisposable = vscode.commands.registerCommand('lms-copilot.clearCompletionCache', () => {
+        // Access the completion provider's cache through a public method
+        if (completionProvider && typeof (completionProvider as any).clearCache === 'function') {
+            (completionProvider as any).clearCache();
+            vscode.window.showInformationMessage('LMS Copilot completion cache cleared');
+        }
+    });
+
+    const showCacheStatsDisposable = vscode.commands.registerCommand('lms-copilot.showCacheStats', () => {
+        if (completionProvider && typeof (completionProvider as any).getCacheStats === 'function') {
+            const stats = (completionProvider as any).getCacheStats();
+            vscode.window.showInformationMessage(
+                `Completion Cache: ${stats.size}/${stats.maxSize} entries`
+            );
+        }
+    });
+
     // Add disposables to subscriptions
-    context.subscriptions.push(startChatDisposable, togglePanelDisposable, chatProviderDisposable);
+    context.subscriptions.push(
+        startChatDisposable, 
+        togglePanelDisposable, 
+        chatProviderDisposable,
+        completionProviderDisposable,
+        enableCompletionsDisposable,
+        disableCompletionsDisposable,
+        clearCacheDisposable,
+        showCacheStatsDisposable
+    );
 }
 
 // Add mock VS Code API for testing
