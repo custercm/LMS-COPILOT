@@ -11,6 +11,7 @@ interface MessageItemProps {
   message: ChatMessage;
   onOpenFile?: (filePath: string, lineNumber?: number) => void;
   onPreviewFile?: (filePath: string) => Promise<string>;
+  onContextMenu?: (event: React.MouseEvent) => void;
   // Add new prop for media file handling
   onHandleMediaOperation?: (filePath: string, operation: 'preview' | 'convert' | 'metadata') => void;
 }
@@ -19,6 +20,7 @@ function MessageItem({
   message,
   onOpenFile,
   onPreviewFile,
+  onContextMenu,
   onHandleMediaOperation
 }: MessageItemProps) {
   // Render content with file references
@@ -157,7 +159,10 @@ function MessageItem({
   const filePaths = extractFilePaths(message.content);
 
   return (
-    <div className={`message-item ${message.role}`}>
+    <div 
+      className={`message-item ${message.role} interactive-element`}
+      onContextMenu={onContextMenu}
+    >
       {renderContent()}
 
       {/* File References Section */}

@@ -57,6 +57,23 @@
           "type": "string",
           "default": "llama3",
           "description": "Default AI model to use"
+        },
+        "lmsCopilot.securityLevel": {
+          "type": "string",
+          "enum": ["disabled", "minimal", "standard", "strict"],
+          "default": "minimal",
+          "description": "Security level for the extension",
+          "enumDescriptions": [
+            "No security (fastest, personal use only)",
+            "Basic protection (recommended for personal use)",
+            "Moderate security (team use)",
+            "Full security (enterprise/public use)"
+          ]
+        },
+        "lmsCopilot.allowDangerousCommands": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow potentially dangerous terminal commands (only enable if you trust the AI model completely)"
         }
       }
     }

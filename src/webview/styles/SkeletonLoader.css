@@ -1,0 +1,222 @@
+/* Skeleton Loader Styles - 60fps optimized */
+.skeleton-loader {
+  /* GPU acceleration */
+  transform: translateZ(0);
+  will-change: opacity;
+  contain: layout style paint;
+}
+
+/* Base skeleton styles */
+.skeleton-line,
+.skeleton-text,
+.skeleton-rectangular,
+.skeleton-circular {
+  background: linear-gradient(
+    90deg,
+    var(--vscode-editor-background) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    var(--vscode-editor-background) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px;
+  height: 16px;
+  margin-bottom: 8px;
+  /* Performance optimization */
+  transform: translateZ(0);
+}
+
+.skeleton-circular {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
+
+.skeleton-rectangular {
+  height: 120px;
+  border-radius: 8px;
+}
+
+/* Line variations */
+.skeleton-line.short {
+  width: 60%;
+}
+
+.skeleton-line.medium {
+  width: 80%;
+}
+
+/* Animations optimized for 60fps */
+.skeleton-loader.pulse .skeleton-line,
+.skeleton-loader.pulse .skeleton-text,
+.skeleton-loader.pulse .skeleton-rectangular,
+.skeleton-loader.pulse .skeleton-circular {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-loader.wave .skeleton-line,
+.skeleton-loader.wave .skeleton-text,
+.skeleton-loader.wave .skeleton-rectangular,
+.skeleton-loader.wave .skeleton-circular {
+  animation: skeletonWave 2s linear infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes skeletonWave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Message skeleton */
+.skeleton-message {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.skeleton-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    var(--vscode-editor-background) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    var(--vscode-editor-background) 75%
+  );
+  background-size: 200% 100%;
+  flex-shrink: 0;
+  transform: translateZ(0);
+}
+
+.skeleton-message-content {
+  flex: 1;
+}
+
+.skeleton-message.pulse .skeleton-avatar {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-message.wave .skeleton-avatar {
+  animation: skeletonWave 2s linear infinite;
+}
+
+/* Code skeleton */
+.skeleton-code {
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--vscode-editor-background);
+  margin-bottom: 16px;
+}
+
+.skeleton-code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--vscode-widget-border);
+}
+
+.skeleton-copy-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--vscode-editor-background) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    var(--vscode-editor-background) 75%
+  );
+  background-size: 200% 100%;
+  transform: translateZ(0);
+}
+
+.skeleton-code-content {
+  font-family: var(--vscode-editor-font-family);
+}
+
+.skeleton-code-line {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.skeleton-line-number {
+  width: 20px;
+  height: 14px;
+  background: linear-gradient(
+    90deg,
+    var(--vscode-editor-background) 25%,
+    rgba(255, 255, 255, 0.05) 50%,
+    var(--vscode-editor-background) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: 2px;
+  flex-shrink: 0;
+  transform: translateZ(0);
+}
+
+.skeleton-code.pulse .skeleton-copy-button,
+.skeleton-code.pulse .skeleton-line-number {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-code.wave .skeleton-copy-button,
+.skeleton-code.wave .skeleton-line-number {
+  animation: skeletonWave 2s linear infinite;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .skeleton-line,
+  .skeleton-text,
+  .skeleton-rectangular,
+  .skeleton-circular,
+  .skeleton-avatar,
+  .skeleton-copy-button,
+  .skeleton-line-number {
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 10px,
+      var(--vscode-contrastBorder) 10px,
+      var(--vscode-contrastBorder) 11px
+    );
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-loader.pulse .skeleton-line,
+  .skeleton-loader.pulse .skeleton-text,
+  .skeleton-loader.pulse .skeleton-rectangular,
+  .skeleton-loader.pulse .skeleton-circular,
+  .skeleton-loader.pulse .skeleton-avatar,
+  .skeleton-loader.pulse .skeleton-copy-button,
+  .skeleton-loader.pulse .skeleton-line-number,
+  .skeleton-loader.wave .skeleton-line,
+  .skeleton-loader.wave .skeleton-text,
+  .skeleton-loader.wave .skeleton-rectangular,
+  .skeleton-loader.wave .skeleton-circular,
+  .skeleton-loader.wave .skeleton-avatar,
+  .skeleton-loader.wave .skeleton-copy-button,
+  .skeleton-loader.wave .skeleton-line-number {
+    animation: none;
+    opacity: 0.7;
+  }
+}

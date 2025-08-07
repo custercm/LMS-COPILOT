@@ -1,11 +1,17 @@
 import * as vscode from 'vscode';
 import { LMStudioClient } from '../lmstudio/LMStudioClient';
+import { SecurityManager } from '../security/SecurityManager';
+import { PermissionsManager } from '../security/PermissionsManager';
+import { RateLimiter } from '../security/RateLimiter';
 
 export class ChatProvider implements vscode.WebviewViewProvider {
     private _webviewView: vscode.WebviewView | undefined;
     private client: LMStudioClient;
+    private securityManager: SecurityManager;
+    private permissionsManager: PermissionsManager;
+    private rateLimiter: RateLimiter;
     
-    // Rate limiting properties
+    // Rate limiting properties (deprecated - using RateLimiter instead)
     private requestCount: number = 0;
     private resetTime: number = Date.now() + 60000;
     private lastApiCallTime: number | null = null;
@@ -16,6 +22,11 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     constructor(client: LMStudioClient, extensionUri: vscode.Uri) { 
         this.client = client;
         this.extensionUri = extensionUri;
+        
+        // Initialize security components
+        this.securityManager = SecurityManager.getInstance();
+        this.permissionsManager = PermissionsManager.getInstance();
+        this.rateLimiter = RateLimiter.getInstance();
     }
 
     public async resolveWebviewView(
@@ -44,42 +55,108 @@ export class ChatProvider implements vscode.WebviewViewProvider {
 
         // Handle messages from the webview
         webviewView.webview.onDidReceiveMessage(async (message) => {
-            switch (message.command) {
-                case 'sendMessage':
-                    await this.handleSendMessage(message.text);
+            try {
+                // Rate limit check for all incoming messages
+                const rateLimitResult = this.rateLimiter.checkLimit('chat_messages');
+                if (!rateLimitResult.allowed) {
+                    webviewView.webview.postMessage({
+                        command: 'error',
+                        message: `Rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`
+                    });
                     return;
-                case 'analyzeWorkspace':
-                    await this.handleAnalyzeWorkspace(message.structure);
-                    return;
-                case 'getWorkspaceStructure':
-                    await this.handleGetWorkspaceStructure();
-                    return;
-                case 'applyChange':
-                    await this.handleApplyChange(message.changeId, message.content);
-                    return;
-                case 'runCode':
-                    await this.handleRunCode(message.code, message.changeId);
-                    return;
-                case 'editInEditor':
-                    await this.handleEditInEditor(message.content, message.changeId);
-                    return;
-                case 'regenerateResponse':
-                    await this.handleRegenerateResponse(message.changeId);
-                    return;
-                case 'openFile':
-                    // Handle opening files from the webview
-                    const fileUri = vscode.Uri.file(message.filePath);
-                    try {
-                        const document = await vscode.workspace.openTextDocument(fileUri);
-                        await vscode.window.showTextDocument(document, { 
-                            preview: false,
-                            selection: message.lineNumber ? new vscode.Range(message.lineNumber - 1, 0, message.lineNumber - 1, 0) : undefined
-                        });
-                    } catch (error) {
-                        console.error('Failed to open file:', error);
-                        vscode.window.showErrorMessage(`Failed to open file: ${message.filePath}`);
+                }
+
+                // Sanitize incoming message
+                const sanitizedMessage = {
+                    ...message,
+                    text: message.text ? this.securityManager.sanitizeInput(message.text) : message.text,
+                    content: message.content ? this.securityManager.sanitizeInput(message.content) : message.content,
+                    code: message.code ? this.securityManager.sanitizeInput(message.code) : message.code
+                };
+
+                switch (sanitizedMessage.command) {
+                    case 'sendMessage':
+                        await this.handleSendMessage(sanitizedMessage.text);
+                        return;
+                    case 'analyzeWorkspace':
+                        await this.handleAnalyzeWorkspace(sanitizedMessage.structure);
+                        return;
+                    case 'getWorkspaceStructure':
+                        await this.handleGetWorkspaceStructure();
+                        return;
+                    case 'applyChange':
+                        await this.handleApplyChange(sanitizedMessage.changeId, sanitizedMessage.content);
+                        return;
+                    case 'runCode':
+                        await this.handleRunCode(sanitizedMessage.code, sanitizedMessage.changeId);
+                        return;
+                    case 'editInEditor':
+                        await this.handleEditInEditor(sanitizedMessage.content, sanitizedMessage.changeId);
+                        return;
+                    case 'regenerateResponse':
+                        await this.handleRegenerateResponse(sanitizedMessage.changeId);
+                        return;
+                    case 'openFile':
+                        // Handle opening files from the webview with permission check
+                        const permissionResult = await this.permissionsManager.checkPermission(
+                            sanitizedMessage.filePath, 
+                            'READ'
+                        );
+                        
+                        if (!permissionResult.allowed) {
+                            if (permissionResult.requiresUserConfirmation) {
+                                const approved = await this.permissionsManager.requestUserPermission(
+                                    'read file',
+                                    sanitizedMessage.filePath,
+                                    permissionResult.details || 'Open file in editor'
+                                );
+                                
+                                if (!approved) {
+                                    webviewView.webview.postMessage({
+                                        command: 'error',
+                                        message: `Permission denied: ${permissionResult.reason}`
+                                    });
+                                    return;
+                                }
+                            } else {
+                                webviewView.webview.postMessage({
+                                    command: 'error',
+                                    message: `Permission denied: ${permissionResult.reason}`
+                                });
+                                return;
+                            }
+                        }
+
+                        const fileUri = vscode.Uri.file(sanitizedMessage.filePath);
+                        try {
+                            const document = await vscode.workspace.openTextDocument(fileUri);
+                            await vscode.window.showTextDocument(document, { 
+                                preview: false,
+                                selection: sanitizedMessage.lineNumber ? new vscode.Range(sanitizedMessage.lineNumber - 1, 0, sanitizedMessage.lineNumber - 1, 0) : undefined
+                            });
+                        } catch (error) {
+                            console.error('Failed to open file:', error);
+                            vscode.window.showErrorMessage(`Failed to open file: ${sanitizedMessage.filePath}`);
+                        }
+                        return;
+                }
+            } catch (error) {
+                // Global error handling for all message processing
+                console.error('Error processing webview message:', error);
+                this.securityManager.logAuditEvent({
+                    type: 'message_processing_error',
+                    timestamp: new Date(),
+                    approved: false,
+                    details: { 
+                        command: message.command, 
+                        error: error instanceof Error ? error.message : 'Unknown error' 
                     }
-                    return;
+                });
+                
+                webviewView.webview.postMessage({
+                    command: 'error',
+                    message: 'An error occurred while processing your request. Please try again.'
+                });
             }
         });
     }
@@ -96,7 +173,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'none'; script-src ${webview.cspSource} 'unsafe-inline' 'unsafe-eval'; style-src ${webview.cspSource} 'unsafe-inline';">
+          content="${this.securityManager.generateCSP(webview)}">
     <title>LMS Copilot Chat</title>
     <style>
         body {
@@ -261,19 +338,60 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         if (!this._webviewView) return;
         
         try {
-            // Validate terminal command before execution
-            const sanitizedCode = this._sanitizeInput(code);
-            
-            if (!this._validateTerminalCommand(sanitizedCode)) {
-                throw new Error('Unsafe code detected for execution');
+            // Rate limit check for terminal commands
+            const rateLimitResult = this.rateLimiter.checkLimit('terminal_commands');
+            if (!rateLimitResult.allowed) {
+                throw new Error(`Rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`);
             }
+
+            // Security validation for terminal command
+            const validationResult = this.securityManager.validateTerminalCommand(code);
+            if (!validationResult.isValid) {
+                if (validationResult.requiresApproval) {
+                    const approved = await this.permissionsManager.requestUserPermission(
+                        'execute terminal command',
+                        'terminal',
+                        `Execute command: ${code}`
+                    );
+                    
+                    if (approved) {
+                        this.securityManager.approveCommand(code);
+                    } else {
+                        throw new Error(`Command execution denied: ${validationResult.reason}`);
+                    }
+                } else {
+                    throw new Error(`Command validation failed: ${validationResult.reason}`);
+                }
+            }
+
+            // Log the command execution attempt
+            this.securityManager.logAuditEvent({
+                type: 'terminal_command_execution',
+                command: code,
+                timestamp: new Date(),
+                approved: true,
+                details: { changeId }
+            });
             
             // Execute code in a sandboxed environment
-            const output = await this.executeTerminalCommand(sanitizedCode);
+            const output = await this.executeTerminalCommand(code);
             
             this.showTerminalOutput(code, output);
         } catch (error) {
             console.error('Error running code:', error);
+            
+            // Log the failed execution
+            this.securityManager.logAuditEvent({
+                type: 'terminal_command_execution_failed',
+                command: code,
+                timestamp: new Date(),
+                approved: false,
+                details: { 
+                    changeId, 
+                    error: error instanceof Error ? error.message : 'Unknown error' 
+                }
+            });
+            
             this._webviewView.webview.postMessage({
                 command: 'handleError',
                 message: `Failed to run code: ${error instanceof Error ? error.message : 'Unknown error'}`

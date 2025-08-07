@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { AgentManager } from './agent/AgentManager';
 import { LMStudioClient } from './lmstudio/LMStudioClient';
 import { ConversationHistory } from './agent/ConversationHistory';
+// Security system is implemented in ./security/ and integrated into ChatProvider
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('LMS Copilot extension is now active!');

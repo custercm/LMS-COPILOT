@@ -3,9 +3,13 @@ import MessageList from './MessageList';
 import InputArea from './InputArea';
 import StreamingIndicator from './StreamingIndicator';
 import CommandPalette, { Command } from './CommandPalette';
+import ContextualMenu, { ContextMenuItem } from './ContextualMenu';
+import EnhancedTooltip from './EnhancedTooltip';
+import SkeletonLoader from './SkeletonLoader';
 import { ChatResponse, ExtensionMessage, WebviewCommand, FileReference } from '../types/api';
 import { Message } from '../types/messages';
 import useWebviewApi from '../hooks/useWebviewApi';
+import { useKeyboardNavigation, useFocusAnnouncement } from '../hooks/useKeyboardNavigation';
 import { CommandHandler, CommandContext } from '../utils/commandHandler';
 import { CommandHistoryManager } from '../utils/commandHistory';
 import '../styles/ChatInterface.css';
@@ -16,9 +20,31 @@ const ChatInterface: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    position: { x: number; y: number };
+    items: ContextMenuItem[];
+  }>({
+    visible: false,
+    position: { x: 0, y: 0 },
+    items: []
+  });
+
   const webviewApi = useWebviewApi();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Accessibility hooks
+  const { announce, announceRef } = useFocusAnnouncement();
+  const containerRef = useKeyboardNavigation({
+    onEscape: () => {
+      setShowCommandPalette(false);
+      setContextMenu(prev => ({ ...prev, visible: false }));
+    },
+    focusOnMount: true
+  }) as React.RefObject<HTMLDivElement>;
 
   // Create command context
   const commandContext: CommandContext = {
@@ -50,6 +76,119 @@ const ChatInterface: React.FC = () => {
   // Initialize command handler
   const commandHandler = new CommandHandler(commandContext);
   const availableCommands = commandHandler.getCommands();
+
+  // Context menu handlers
+  const handleContextMenu = (event: React.MouseEvent, messageId?: string) => {
+    event.preventDefault();
+    
+    const items: ContextMenuItem[] = [
+      {
+        id: 'copy',
+        label: 'Copy Message',
+        icon: '📋',
+        shortcut: 'Ctrl+C',
+        onClick: () => {
+          if (messageId) {
+            const message = messages.find(m => m.id === messageId);
+            if (message) {
+              navigator.clipboard.writeText(message.content);
+              announce('Message copied to clipboard');
+            }
+          }
+        }
+      },
+      {
+        id: 'regenerate',
+        label: 'Regenerate Response',
+        icon: '🔄',
+        onClick: () => {
+          if (messageId) {
+            handleRegenerateMessage(messageId);
+            announce('Regenerating response');
+          }
+        },
+        disabled: !messageId || messages.find(m => m.id === messageId)?.role !== 'assistant'
+      },
+      {
+        id: 'edit',
+        label: 'Edit Message',
+        icon: '✏️',
+        shortcut: 'E',
+        onClick: () => {
+          if (messageId) {
+            handleEditMessage(messageId);
+          }
+        }
+      },
+      {
+        id: 'separator1',
+        label: '---',
+        onClick: () => {},
+        disabled: true
+      },
+      {
+        id: 'export',
+        label: 'Export Chat',
+        icon: '💾',
+        shortcut: 'Ctrl+S',
+        onClick: () => {
+          handleExportChat();
+          announce('Chat export started');
+        }
+      },
+      {
+        id: 'clear',
+        label: 'Clear Chat',
+        icon: '🗑️',
+        shortcut: 'Ctrl+Shift+L',
+        onClick: () => {
+          commandHandler.executeCommand('/clear');
+          announce('Chat cleared');
+        }
+      }
+    ];
+
+    setContextMenu({
+      visible: true,
+      position: { x: event.clientX, y: event.clientY },
+      items
+    });
+  };
+
+  const handleRegenerateMessage = (messageId: string) => {
+    // Implementation for regenerating a message
+    setIsLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+  };
+
+  const handleEditMessage = (messageId: string) => {
+    // Implementation for editing a message
+    const message = messages.find(m => m.id === messageId);
+    if (message) {
+      // Open edit dialog or make message editable
+      console.log('Editing message:', message);
+    }
+  };
+
+  const handleExportChat = () => {
+    // Implementation for exporting chat
+    const chatData = {
+      messages,
+      exportDate: new Date().toISOString(),
+      version: '1.0'
+    };
+    
+    const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lms-copilot-chat-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -216,22 +355,44 @@ const ChatInterface: React.FC = () => {
   };
 
   return (
-    <div className="chat-interface">
-      {/* Notification system */}
+    <div 
+      ref={containerRef}
+      className="chat-interface"
+      onContextMenu={(e) => handleContextMenu(e)}
+      role="main"
+      aria-label="LMS Copilot Chat Interface"
+      tabIndex={-1}
+    >
+      {/* Skip link for accessibility */}
+      <a href="#main-input" className="skip-link">
+        Skip to message input
+      </a>
+
+      {/* Screen reader announcements */}
+      <div
+        ref={announceRef}
+        className="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+      />
+
+      {/* Enhanced notification system */}
       {notification && (
-        <div className={`notification ${notification.type}`}>
+        <div className={`notification ${notification.type}`} role="alert" aria-live="assertive">
           <span className="notification-message">{notification.message}</span>
-          <button 
-            className="notification-close"
-            onClick={() => setNotification(null)}
-            aria-label="Close notification"
-          >
-            ×
-          </button>
+          <EnhancedTooltip content="Close notification">
+            <button 
+              className="notification-close interactive-element"
+              onClick={() => setNotification(null)}
+              aria-label="Close notification"
+            >
+              ×
+            </button>
+          </EnhancedTooltip>
         </div>
       )}
 
-      {/* Command Palette */}
+      {/* Command Palette with enhanced navigation */}
       <CommandPalette
         commands={availableCommands}
         onCommandSelect={handleCommandPaletteSelect}
@@ -239,37 +400,31 @@ const ChatInterface: React.FC = () => {
         isVisible={showCommandPalette}
       />
 
-      {/* Loading state/skeleton loader */}
-      {isLoading && (
-        <div className="skeleton-loader-container">
-          <div className="skeleton-message user-message">
-            <div className="skeleton-content"></div>
-          </div>
-          <div className="skeleton-message assistant-message">
-            <div className="skeleton-content"></div>
-            <div className="skeleton-content short"></div>
-          </div>
+      {/* Loading state with enhanced skeleton loaders */}
+      {isLoading && messages.length === 0 && (
+        <div className="skeleton-loader-container" aria-label="Loading conversation">
+          <SkeletonLoader variant="message" animation="wave" />
+          <SkeletonLoader variant="message" animation="wave" />
         </div>
       )}
       
-      {/* Message list with smooth transitions */}
+      {/* Message list with enhanced accessibility */}
       <MessageList
         messages={messages}
         fileReferences={fileReferences}
         onOpenFile={(filePath: string, lineNumber?: number) => {
-          // Send command to open file in editor
           webviewApi.sendMessage({
             command: 'openFile',
             filePath: filePath,
             lineNumber: lineNumber
           });
+          announce(`Opening file ${filePath}${lineNumber ? ` at line ${lineNumber}` : ''}`);
         }}
         onPreviewFile={async (filePath: string) => {
-          // Send command to preview file content
+          announce(`Loading preview for ${filePath}`);
           return new Promise((resolve, reject) => {
             const requestId = Date.now().toString();
             
-            // Store the promise resolvers
             const cleanup = () => {
               window.removeEventListener('message', messageHandler);
             };
@@ -279,8 +434,10 @@ const ChatInterface: React.FC = () => {
               if (message.command === 'filePreviewResponse' && message.requestId === requestId) {
                 cleanup();
                 if (message.error) {
+                  announce(`Failed to load preview: ${message.error}`);
                   reject(new Error(message.error));
                 } else {
+                  announce('File preview loaded');
                   resolve(message.content || '');
                 }
               }
@@ -288,32 +445,33 @@ const ChatInterface: React.FC = () => {
             
             window.addEventListener('message', messageHandler);
             
-            // Send preview request
             webviewApi.sendMessage({
               command: 'previewFile',
               filePath: filePath,
               requestId: requestId
             });
             
-            // Timeout after 5 seconds
             setTimeout(() => {
               cleanup();
+              announce('File preview timed out');
               reject(new Error('File preview timeout'));
             }, 5000);
           });
         }}
+        onContextMenu={handleContextMenu}
       />
       
-      {/* Progress indicator for long operations */}
-      {isLoading && (
-        <div className="progress-indicator">
+      {/* Active loading indicator for current messages */}
+      {isLoading && messages.length > 0 && (
+        <div className="progress-indicator" aria-label="Processing request">
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: '75%' }}></div>
           </div>
+          <SkeletonLoader variant="message" animation="pulse" />
         </div>
       )}
 
-      {/* File attachment area */}
+      {/* Enhanced file attachment area */}
       <div className="file-attachment-area">
         <input
           type="file"
@@ -321,27 +479,48 @@ const ChatInterface: React.FC = () => {
           onChange={handleFileInputChange}
           style={{ display: 'none' }}
           multiple
+          accept=".txt,.md,.js,.ts,.tsx,.jsx,.py,.java,.cpp,.c,.h,.css,.html,.json,.xml,.yaml,.yml"
+          aria-label="File input for attachments"
         />
-        <button onClick={handleFileAttachment} className="attach-button">
-          Attach Files
-        </button>
+        <EnhancedTooltip content="Attach files to include in your conversation">
+          <button 
+            onClick={handleFileAttachment} 
+            className="attach-button interactive-element"
+            aria-label="Attach files"
+          >
+            📎 Attach Files
+          </button>
+        </EnhancedTooltip>
       </div>
 
-      {/* Enhanced Input Area with command support */}
+      {/* Enhanced Input Area with comprehensive accessibility */}
       <InputArea
         onSendMessage={handleSendMessage}
         onCommandSelect={handleCommandSelect}
-        onShowCommandPalette={() => setShowCommandPalette(true)}
-        ariaLabel="Chat input area"
+        onShowCommandPalette={() => {
+          setShowCommandPalette(true);
+          announce('Command palette opened');
+        }}
+        ariaLabel="Chat input area - Type your message or use / for commands"
         enableDragAndDrop={true}
       />
 
-      {/* Streaming indicator with micro-interactions */}
+      {/* Enhanced streaming indicator */}
       <StreamingIndicator
         isStreaming={isLoading}
         progress={isLoading ? 75 : 0}
       />
+
+      {/* Contextual menu */}
+      <ContextualMenu
+        items={contextMenu.items}
+        visible={contextMenu.visible}
+        position={contextMenu.position}
+        onClose={() => setContextMenu(prev => ({ ...prev, visible: false }))}
+        ariaLabel="Message context menu"
+      />
       
+      {/* Auto-scroll target */}
       <div ref={messagesEndRef} />
     </div>
   );

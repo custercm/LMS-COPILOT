@@ -1,0 +1,123 @@
+/* Enhanced Tooltip Styles - 60fps optimized */
+.tooltip-trigger {
+  position: relative;
+  display: inline-block;
+}
+
+.enhanced-tooltip {
+  position: absolute;
+  z-index: 9999;
+  background: var(--vscode-editorHoverWidget-background);
+  border: 1px solid var(--vscode-editorHoverWidget-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+  /* GPU acceleration for smooth animations */
+  transform: translateZ(0);
+  will-change: opacity, transform;
+  animation: tooltipEnter 0.16s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+@keyframes tooltipEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+  }
+}
+
+.tooltip-content {
+  padding: 8px 12px;
+  color: var(--vscode-editorHoverWidget-foreground);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Positioning */
+.enhanced-tooltip.top {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateZ(0);
+  margin-bottom: 8px;
+}
+
+.enhanced-tooltip.bottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateZ(0);
+  margin-top: 8px;
+}
+
+.enhanced-tooltip.left {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateZ(0);
+  margin-right: 8px;
+}
+
+.enhanced-tooltip.right {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateZ(0);
+  margin-left: 8px;
+}
+
+/* Arrows */
+.tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.tooltip-arrow.top {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0 6px;
+  border-color: var(--vscode-editorHoverWidget-background) transparent transparent transparent;
+}
+
+.tooltip-arrow.bottom {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 6px 6px 6px;
+  border-color: transparent transparent var(--vscode-editorHoverWidget-background) transparent;
+}
+
+.tooltip-arrow.left {
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 6px 0 6px 6px;
+  border-color: transparent transparent transparent var(--vscode-editorHoverWidget-background);
+}
+
+.tooltip-arrow.right {
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 6px 6px 6px 0;
+  border-color: transparent var(--vscode-editorHoverWidget-background) transparent transparent;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .enhanced-tooltip {
+    border-width: 2px;
+    box-shadow: 0 0 0 2px var(--vscode-contrastBorder);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .enhanced-tooltip {
+    animation: none;
+  }
+}

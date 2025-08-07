@@ -8,6 +8,7 @@ interface MessageListProps {
   fileReferences?: FileReference[];
   onOpenFile?: (filePath: string, lineNumber?: number) => void;
   onPreviewFile?: (filePath: string) => Promise<string>;
+  onContextMenu?: (event: React.MouseEvent, messageId?: string) => void;
   isHovered?: boolean;
 }
 
@@ -29,6 +30,7 @@ function MessageList({
   fileReferences = [],
   onOpenFile,
   onPreviewFile,
+  onContextMenu,
   isHovered = false
 }: MessageListProps) {
   const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
@@ -225,6 +227,7 @@ function MessageList({
                 message={message}
                 onOpenFile={onOpenFile}
                 onPreviewFile={onPreviewFile}
+                onContextMenu={(event: React.MouseEvent) => onContextMenu?.(event, message.id)}
               />
             </div>
           );

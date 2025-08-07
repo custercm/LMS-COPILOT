@@ -1,4 +1,4 @@
-/* Performance optimization CSS styles */
+/* Performance optimization CSS styles - 60fps animations */
 
 /* GPU acceleration for smooth scrolling */
 .message-list {
@@ -8,20 +8,29 @@
   will-change: scroll-position;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Force hardware acceleration */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 
 .message-list.scrolling {
   will-change: transform;
 }
 
-/* Optimize message items for virtualization */
+/* Optimize message items for virtualization and 60fps */
 .message-item {
   contain: layout style paint;
   will-change: transform;
   backface-visibility: hidden;
+  /* GPU layer for smooth animations */
+  transform: translateZ(0);
+  /* Optimize for 60fps transitions */
+  transition: transform 0.16s cubic-bezier(0.4, 0.0, 0.2, 1),
+              opacity 0.16s cubic-bezier(0.4, 0.0, 0.2, 1),
+              box-shadow 0.16s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
-/* Code block loading optimization */
+/* Code block loading optimization with 60fps animations */
 .code-loading-placeholder {
   display: flex;
   align-items: center;
@@ -32,15 +41,35 @@
   border-radius: 4px;
   font-family: var(--vscode-editor-font-family);
   color: var(--vscode-foreground);
+  /* Optimize for GPU acceleration */
+  transform: translateZ(0);
+  will-change: opacity;
 }
 
 .loading-spinner {
   animation: spin 1s linear infinite;
+  /* Force GPU acceleration for smooth spinning */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from { transform: rotate(0deg) translateZ(0); }
+  to { transform: rotate(360deg) translateZ(0); }
+}
+
+/* Optimized micro-interactions */
+.interactive-element {
+  transform: translateZ(0);
+  transition: transform 0.16s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.interactive-element:hover {
+  transform: scale(1.02) translateZ(0);
+}
+
+.interactive-element:active {
+  transform: scale(0.98) translateZ(0);
 }
 
 .code-loading {
