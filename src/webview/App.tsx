@@ -1,18 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import ChatInterface from './components/ChatInterface';
-import useWebviewApi from './hooks/useWebviewApi';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-}
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ChatInterface from './components/ChatInterface';
+import ErrorBoundary from './components/ErrorBoundary';
+import ConnectionStatus from './components/ConnectionStatus';
+import { OfflineProvider, OfflineBanner } from './hooks/useOfflineMode';
 import useWebviewApi from './hooks/useWebviewApi';
 import useMemoryManager from './hooks/useMemoryManager';
+import { errorLogger } from './utils/errorLogger';
 
 interface Message {
   id: string;
@@ -98,28 +91,52 @@ const App = React.memo(() => {
   }, [initializeApp, updatePerformanceMetrics]);
 
   return (
-    <div className="app">
-      <ChatInterface />
-      
-      {/* Performance monitoring in development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="performance-monitor" style={{
-          position: 'fixed',
-          top: '10px',
-          right: '10px',
-          background: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          padding: '8px',
-          fontSize: '12px',
-          borderRadius: '4px',
-          zIndex: 1000
-        }}>
-          <div>Render: {performanceMetrics.renderTime.toFixed(2)}ms</div>
-          <div>Memory: {(performanceMetrics.memoryUsage / 1024 / 1024).toFixed(2)}MB</div>
-          <div>Messages: {performanceMetrics.messageCount}</div>
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        errorLogger.error('React component error', error, {
+          componentStack: errorInfo.componentStack
+        });
+      }}
+    >
+      <OfflineProvider
+        onActionQueued={(action) => {
+          errorLogger.info('Action queued for offline processing', { actionType: action.type });
+        }}
+        onQueueProcessed={(processed, failed) => {
+          errorLogger.info('Offline queue processed', { processed, failed });
+        }}
+      >
+        <div className="app">
+          {/* Connection status and offline banner */}
+          <div className="app__status">
+            <ConnectionStatus showDetails={false} />
+            <OfflineBanner showQueue={true} />
+          </div>
+
+          {/* Main chat interface */}
+          <ChatInterface />
+          
+          {/* Performance monitoring in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="performance-monitor" style={{
+              position: 'fixed',
+              top: '10px',
+              right: '10px',
+              background: 'rgba(0,0,0,0.8)',
+              color: 'white',
+              padding: '8px',
+              fontSize: '12px',
+              borderRadius: '4px',
+              zIndex: 1000
+            }}>
+              <div>Render: {performanceMetrics.renderTime.toFixed(2)}ms</div>
+              <div>Memory: {(performanceMetrics.memoryUsage / 1024 / 1024).toFixed(2)}MB</div>
+              <div>Messages: {performanceMetrics.messageCount}</div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </OfflineProvider>
+    </ErrorBoundary>
   );
 });
 

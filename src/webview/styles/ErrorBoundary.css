@@ -1,0 +1,119 @@
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 20px;
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-notificationsErrorIcon-foreground);
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.error-boundary__container {
+  text-align: center;
+  max-width: 500px;
+}
+
+.error-boundary__icon {
+  color: var(--vscode-notificationsErrorIcon-foreground);
+  margin-bottom: 16px;
+}
+
+.error-boundary__title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--vscode-foreground);
+}
+
+.error-boundary__message {
+  font-size: 14px;
+  color: var(--vscode-descriptionForeground);
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.error-boundary__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.error-boundary__button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.error-boundary__button--primary {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border-color: var(--vscode-button-background);
+}
+
+.error-boundary__button--primary:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.error-boundary__button--secondary {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border-color: var(--vscode-button-secondaryBackground);
+}
+
+.error-boundary__button--secondary:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.error-boundary__details {
+  text-align: left;
+  margin-top: 24px;
+  padding: 16px;
+  background-color: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 4px;
+}
+
+.error-boundary__details summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--vscode-foreground);
+}
+
+.error-boundary__stack,
+.error-boundary__component-stack {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  padding: 12px;
+  border-radius: 4px;
+  margin: 8px 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  border: 1px solid var(--vscode-widget-border);
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .error-boundary {
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .error-boundary__actions {
+    flex-direction: column;
+  }
+  
+  .error-boundary__button {
+    width: 100%;
+  }
+}

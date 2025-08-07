@@ -1,0 +1,157 @@
+.connection-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  user-select: none;
+}
+
+.connection-status__indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.connection-status__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.connection-status__text {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Connection states */
+.connection-status.connected .connection-status__indicator {
+  background-color: var(--vscode-testing-iconPassed);
+  color: var(--vscode-button-foreground);
+}
+
+.connection-status.connected .connection-status__icon {
+  color: var(--vscode-charts-green);
+}
+
+.connection-status.connecting .connection-status__indicator {
+  background-color: var(--vscode-testing-iconQueued);
+  color: var(--vscode-button-foreground);
+}
+
+.connection-status.connecting .connection-status__icon {
+  color: var(--vscode-charts-yellow);
+}
+
+.connection-status.disconnected .connection-status__indicator {
+  background-color: var(--vscode-testing-iconFailed);
+  color: var(--vscode-button-foreground);
+}
+
+.connection-status.disconnected .connection-status__icon {
+  color: var(--vscode-charts-red);
+}
+
+.connection-status.offline .connection-status__indicator {
+  background-color: var(--vscode-editorWarning-background);
+  color: var(--vscode-editorWarning-foreground);
+  border: 1px solid var(--vscode-editorWarning-border);
+}
+
+.connection-status.offline .connection-status__icon {
+  color: var(--vscode-charts-orange);
+}
+
+/* Details section */
+.connection-status__details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 22px; /* Align with icon + gap */
+}
+
+.connection-status__last-connected {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+
+.connection-status__retry {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid var(--vscode-button-secondaryBackground);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.connection-status__retry:hover:not(:disabled) {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.connection-status__retry:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Spinning animation for connecting states */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Compact variant */
+.connection-status.compact {
+  flex-direction: row;
+  align-items: center;
+}
+
+.connection-status.compact .connection-status__details {
+  padding-left: 8px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.connection-status.compact .connection-status__last-connected {
+  font-size: 10px;
+}
+
+/* Status bar variant */
+.connection-status.status-bar {
+  font-size: 11px;
+}
+
+.connection-status.status-bar .connection-status__indicator {
+  padding: 2px 6px;
+  background-color: transparent;
+}
+
+.connection-status.status-bar .connection-status__text {
+  font-weight: normal;
+}
+
+/* Hover states */
+.connection-status__indicator:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Focus states for accessibility */
+.connection-status__retry:focus {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}

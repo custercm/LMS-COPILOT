@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import * as vscode from 'vscode';
 
 export interface LMStudioConfig {
@@ -7,6 +7,16 @@ export interface LMStudioConfig {
   apiKey?: string;
   timeout: number;
   maxTokens: number;
+  maxRetries?: number;
+  retryDelay?: number;
+}
+
+// Enhanced retry utility with exponential backoff
+interface RetryOptions {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
+  shouldRetry: (error: any) => boolean;
 }
 
 class RiskAssessmentManager {
@@ -33,6 +43,9 @@ class SecurityManager {
 
 export class LMStudioClient {
   private config: LMStudioConfig;
+  private connectionState: 'connected' | 'disconnected' | 'reconnecting' = 'disconnected';
+  private lastError: Error | null = null;
+  private retryCount = 0;
 
   constructor(config: Partial<LMStudioConfig> = {}) {
     this.config = {
@@ -40,34 +53,147 @@ export class LMStudioClient {
       model: config.model || 'llama3',
       apiKey: config.apiKey,
       timeout: config.timeout || 30000,
-      maxTokens: config.maxTokens || 2048
+      maxTokens: config.maxTokens || 2048,
+      maxRetries: config.maxRetries || 3,
+      retryDelay: config.retryDelay || 1000
     };
   }
 
+  private async withRetry<T>(
+    operation: () => Promise<T>,
+    options: Partial<RetryOptions> = {}
+  ): Promise<T> {
+    const retryOptions: RetryOptions = {
+      maxRetries: options.maxRetries || this.config.maxRetries || 3,
+      baseDelay: options.baseDelay || this.config.retryDelay || 1000,
+      maxDelay: options.maxDelay || 30000,
+      shouldRetry: options.shouldRetry || this.isRetryableError
+    };
+
+    let lastError: Error;
+
+    for (let attempt = 1; attempt <= retryOptions.maxRetries + 1; attempt++) {
+      try {
+        const result = await operation();
+        this.connectionState = 'connected';
+        this.retryCount = 0;
+        this.lastError = null;
+        return result;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        this.lastError = lastError;
+
+        if (attempt > retryOptions.maxRetries || !retryOptions.shouldRetry(lastError)) {
+          this.connectionState = 'disconnected';
+          throw lastError;
+        }
+
+        this.connectionState = 'reconnecting';
+        this.retryCount = attempt;
+
+        const delay = Math.min(
+          retryOptions.baseDelay * Math.pow(2, attempt - 1),
+          retryOptions.maxDelay
+        );
+
+        console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms:`, lastError.message);
+        await this.sleep(delay);
+      }
+    }
+
+    this.connectionState = 'disconnected';
+    throw lastError!;
+  }
+
+  private isRetryableError = (error: any): boolean => {
+    // Retry on network errors, timeouts, and server errors
+    if (error.code === 'ECONNREFUSED' || 
+        error.code === 'ENOTFOUND' || 
+        error.code === 'ETIMEDOUT') {
+      return true;
+    }
+
+    if (error.response) {
+      const status = error.response.status;
+      // Retry on server errors (5xx) and rate limiting (429)
+      return status >= 500 || status === 429;
+    }
+
+    return false;
+  };
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   async sendMessage(message: string): Promise<string> {
-    try {
-      const response = await axios.post(`${this.config.endpoint}/v1/chat/completions`, {
-        model: this.config.model,
-        messages: [{ role: 'user', content: message }],
-        max_tokens: this.config.maxTokens,
-        temperature: 0.7
-      });
+    return this.withRetry(async () => {
+      const response = await axios.post(
+        `${this.config.endpoint}/v1/chat/completions`,
+        {
+          model: this.config.model,
+          messages: [{ role: 'user', content: message }],
+          max_tokens: this.config.maxTokens,
+          temperature: 0.7
+        },
+        {
+          timeout: this.config.timeout,
+          headers: this.config.apiKey ? { 'Authorization': `Bearer ${this.config.apiKey}` } : {}
+        }
+      );
       
       return response.data.choices[0]?.message?.content || 'No response received';
-    } catch (error) {
-      console.error('Error communicating with LM Studio:', error);
-      throw error;
-    }
+    });
   }
 
   async listModels(): Promise<string[]> {
-    try {
-      const response = await axios.get(`${this.config.endpoint}/v1/models`);
+    return this.withRetry(async () => {
+      const response = await axios.get(`${this.config.endpoint}/v1/models`, {
+        timeout: this.config.timeout,
+        headers: this.config.apiKey ? { 'Authorization': `Bearer ${this.config.apiKey}` } : {}
+      });
       return response.data.data.map((model: any) => model.id);
+    });
+  }
+
+  // Health check method
+  async healthCheck(): Promise<{ status: string; latency: number; error?: string }> {
+    const startTime = Date.now();
+    
+    try {
+      await this.withRetry(async () => {
+        const response = await axios.get(`${this.config.endpoint}/v1/models`, {
+          timeout: 5000 // Shorter timeout for health checks
+        });
+        if (response.status !== 200) {
+          throw new Error(`Health check failed with status ${response.status}`);
+        }
+        return response;
+      }, { maxRetries: 1 }); // Only one retry for health checks
+      
+      const latency = Date.now() - startTime;
+      return { status: 'healthy', latency };
     } catch (error) {
-      console.error('Error listing models from LM Studio:', error);
-      return [];
+      const latency = Date.now() - startTime;
+      return { 
+        status: 'unhealthy', 
+        latency, 
+        error: error instanceof Error ? error.message : String(error)
+      };
     }
+  }
+
+  // Get connection status
+  getConnectionStatus(): {
+    state: string;
+    lastError: string | null;
+    retryCount: number;
+  } {
+    return {
+      state: this.connectionState,
+      lastError: this.lastError?.message || null,
+      retryCount: this.retryCount
+    };
   }
   
   // New method to analyze workspace structure
