@@ -9,6 +9,7 @@ import { ChatPanel } from './chat/ChatPanel';
 import { MessageHandler } from './chat/MessageHandler';
 import { CompletionProvider } from './completion/CompletionProvider';
 import { ContextAnalyzer } from './completion/ContextAnalyzer';
+import PanelManager from './ui/PanelManager';
 // Security system is implemented in ./security/ and integrated into ChatProvider
 
 export function activate(context: vscode.ExtensionContext) {
@@ -17,11 +18,24 @@ export function activate(context: vscode.ExtensionContext) {
     // Create LM Studio client
     const lmStudioClient = new LMStudioClient();
     
+    // Create panel manager for UI management
+    const panelManager = new PanelManager(
+        {
+            title: 'LMS Copilot Chat',
+            viewType: 'lmsCopilotChat'
+        },
+        lmStudioClient
+    );
+    
     // Create agent manager
     const agentManager = new AgentManager(lmStudioClient);
     
     // Create message handler
     const messageHandler = new MessageHandler(agentManager);
+    
+    // Wire the panel manager with dependencies
+    panelManager.setAgentManager(agentManager);
+    panelManager.setMessageHandler(messageHandler);
     
     // Create and register ChatProvider for webview
     const chatProvider = new ChatProvider(lmStudioClient, context.extensionUri);
@@ -44,62 +58,29 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Register commands
     const startChatDisposable = vscode.commands.registerCommand('lms-copilot.startChat', async () => {
-        // Show the chat webview panel using ChatPanel
-        const panel = vscode.window.createWebviewPanel(
-            'copilotChat',
-            'LMS Copilot Chat',
-            vscode.ViewColumn.One,
-            {
-                enableScripts: true,
-                retainContextWhenHidden: true
-            }
-        );
+        // Use PanelManager to create and manage the chat panel
+        panelManager.createPanel();
         
-        // Create ChatPanel instance for this panel
-        const chatPanel = new ChatPanel(panel.webview);
-        
-        // Set up message handler callback
-        chatPanel.setMessageHandler(async (text: string) => {
-            try {
-                // Process with message handler
-                await messageHandler.handleMessage(text, 'panel');
-            } catch (error) {
-                chatPanel.addMessage('assistant', `Error: ${(error as Error).message}`);
-            }
-        });
-        
-        chatPanel.init();
-        
-        // Wire the message handler to use the chat panel
-        messageHandler.setChatPanel(chatPanel);
-        
-        // Handle other non-chat messages from webview (if any)
-        panel.webview.onDidReceiveMessage(async message => {
-            switch (message.command) {
-                case 'analyzeFile':
-                    try {
-                        const result = await agentManager.analyzeFileContent(message.filePath);
-                        chatPanel.addMessage('assistant', `File Analysis for ${message.filePath}:\n${result}`);
-                    } catch (error) {
-                        chatPanel.addMessage('assistant', `Error analyzing file: ${(error as Error).message}`);
-                    }
-                    return;
-                
-                case 'executeCommand':
-                    try {
-                        const result = await agentManager.executeTerminalCommand(message.commandText);
-                        chatPanel.addMessage('assistant', `Command Output:\n${result}`);
-                    } catch (error) {
-                        chatPanel.addMessage('assistant', `Command Error: ${(error as Error).message}`);
-                    }
-                    return;
-            }
-        });
+        // The PanelManager will handle webview content and communication
+        // Additional integration could be added here for specific features
     });
 
     // Register toggle panel command
     const togglePanelDisposable = vscode.commands.registerCommand('lms-copilot.togglePanel', () => {
         vscode.commands.executeCommand('workbench.view.extension.lmsCopilotContainer');
+    });
+
+    // Register panel position switching command
+    const switchPanelPositionDisposable = vscode.commands.registerCommand('lms-copilot.switchPanelPosition', () => {
+        // This would toggle between bottom panel and right sidebar
+        panelManager.switchPosition('sidebar'); // or 'panel'
+        vscode.window.showInformationMessage('Panel position switched');
+    });
+
+    // Register theme toggle command
+    const toggleThemeDisposable = vscode.commands.registerCommand('lms-copilot.toggleTheme', () => {
+        panelManager.toggleTheme();
+        vscode.window.showInformationMessage('Panel theme toggled');
     });
 
     // Register completion control commands
@@ -152,6 +133,8 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         startChatDisposable, 
         togglePanelDisposable, 
+        switchPanelPositionDisposable,
+        toggleThemeDisposable,
         chatProviderDisposable,
         completionProviderDisposable,
         enableCompletionsDisposable,

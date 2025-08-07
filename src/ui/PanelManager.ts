@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 import { LMStudioClient } from '../lmstudio/LMStudioClient';
+import { ChatPanel } from '../chat/ChatPanel';
+import { MessageHandler } from '../chat/MessageHandler';
+import { AgentManager } from '../agent/AgentManager';
 
 interface PanelConfiguration {
   title: string;
@@ -10,10 +13,23 @@ class PanelManager {
   private currentPanel: vscode.WebviewPanel | null = null;
   private configuration: PanelConfiguration;
   private lmStudioClient: LMStudioClient;
+  private chatPanel: ChatPanel | null = null;
+  private messageHandler: MessageHandler | null = null;
+  private agentManager: AgentManager | null = null;
 
   constructor(config: PanelConfiguration, client: LMStudioClient) {
     this.configuration = config;
     this.lmStudioClient = client;
+  }
+
+  // Set the agent manager for advanced operations
+  setAgentManager(agentManager: AgentManager): void {
+    this.agentManager = agentManager;
+  }
+
+  // Set the message handler for chat operations
+  setMessageHandler(messageHandler: MessageHandler): void {
+    this.messageHandler = messageHandler;
   }
 
   createPanel(): void {
@@ -34,38 +50,71 @@ class PanelManager {
       }
     );
 
-    // Set panel content
-    this.currentPanel.webview.html = this.getWebviewContent();
+    // Create ChatPanel instance for this panel
+    this.chatPanel = new ChatPanel(this.currentPanel.webview);
+
+    // Set up message handler callback if available
+    if (this.messageHandler) {
+      this.chatPanel.setMessageHandler(async (text: string) => {
+        try {
+          await this.messageHandler!.handleMessage(text, 'panel');
+        } catch (error) {
+          this.chatPanel!.addMessage('assistant', `Error: ${(error as Error).message}`);
+        }
+      });
+
+      // Wire the message handler to use this chat panel
+      this.messageHandler.setChatPanel(this.chatPanel);
+    }
+
+    // Initialize the chat panel
+    this.chatPanel.init();
+
+    // Handle other non-chat messages from webview
+    this.currentPanel.webview.onDidReceiveMessage(async message => {
+      await this.handleWebviewMessage(message);
+    });
 
     // Handle when panel is disposed
     this.currentPanel.onDidDispose(() => {
       this.currentPanel = null;
+      this.chatPanel = null;
     });
   }
 
-  private getWebviewContent(): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>${this.configuration.title}</title>
-        </head>
-        <body>
-          <div id="root"></div>
-          <script src="${this.currentPanel?.webview.asWebviewUri(vscode.Uri.file('dist/webview/webview.js'))}"></script>
-        </body>
-      </html>
-    `;
+  // Handle messages from the webview
+  private async handleWebviewMessage(message: any): Promise<void> {
+    if (!this.chatPanel) return;
+
+    switch (message.command) {
+      case 'analyzeFile':
+        if (this.agentManager) {
+          try {
+            const result = await this.agentManager.analyzeFileContent(message.filePath);
+            this.chatPanel.addMessage('assistant', `File Analysis for ${message.filePath}:\n${result}`);
+          } catch (error) {
+            this.chatPanel.addMessage('assistant', `Error analyzing file: ${(error as Error).message}`);
+          }
+        }
+        break;
+      
+      case 'executeCommand':
+        if (this.agentManager) {
+          try {
+            const result = await this.agentManager.executeTerminalCommand(message.commandText);
+            this.chatPanel.addMessage('assistant', `Command Output:\n${result}`);
+          } catch (error) {
+            this.chatPanel.addMessage('assistant', `Command Error: ${(error as Error).message}`);
+          }
+        }
+        break;
+    }
   }
 
   // New method to display workspace analysis with proper implementation
   displayAnalysis(response: string): void {
-    if (this.currentPanel) {
-      this.currentPanel.webview.postMessage({
-        type: 'analysis',
-        payload: { response }
-      });
+    if (this.chatPanel) {
+      this.chatPanel.addMessage('assistant', response);
     }
   }
 
@@ -156,43 +205,28 @@ class PanelManager {
     */
   }
 
-  // Add methods for managing modified files and preview panels
+  // Implementation of displayDiffPreview to show in chat
   displayDiffPreview(changeDetails: any): void {
-    if (this.currentPanel) {
-      this.currentPanel.webview.postMessage({
-        type: 'diff-preview',
-        payload: { changeDetails }
-      });
+    if (this.chatPanel) {
+      this.chatPanel.addMessage('assistant', `Code changes preview:\n\`\`\`\n${JSON.stringify(changeDetails, null, 2)}\n\`\`\``);
     }
   }
 
-  applyAllChanges(): void {
-    // Implementation for applying all pending changes
-    console.log('Applying all changes');
-  }
-
-  rejectAllChanges(): void {
-    // Implementation for rejecting all pending changes
-    console.log('Rejecting all changes');
-  }
-
-  async rollbackChange(filePath: string, versionId?: string): Promise<void> {
-    // Implementation for rolling back specific file changes
-    console.log(`Rolling back change for ${filePath}`);
-    
-    if (versionId) {
-      console.log(`Using version ID: ${versionId}`);
-    }
-  }
-
-  // Terminal output handling in panel
+  // Implementation for showing terminal output in chat
   showTerminalOutput(output: string): void {
-    if (this.currentPanel) {
-      this.currentPanel.webview.postMessage({
-        type: 'terminal-output',
-        payload: { output }
-      });
+    if (this.chatPanel) {
+      this.chatPanel.addMessage('assistant', `Terminal output:\n\`\`\`\n${output}\n\`\`\``);
     }
+  }
+
+  // Add method to get current chat panel for external access
+  getChatPanel(): ChatPanel | null {
+    return this.chatPanel;
+  }
+
+  // Add method to check if panel is active
+  isActive(): boolean {
+    return this.currentPanel !== null;
   }
 }
 

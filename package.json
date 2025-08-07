@@ -71,6 +71,16 @@
         "command": "lms-copilot.testModels",
         "title": "Test Model Management",
         "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.switchPanelPosition",
+        "title": "Switch Panel Position",
+        "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.toggleTheme",
+        "title": "Toggle Panel Theme",
+        "category": "LMS Copilot"
       }
     ],
     "configuration": {
