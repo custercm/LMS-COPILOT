@@ -14,10 +14,11 @@ body[data-vscode-theme="light"] {
   --vscode-chat-assistant-message-background: #ffffff;
 }
 
-/* Dark theme overrides */
+/* Dark theme overrides - GitHub Copilot exact colors */
 body[data-vscode-theme="dark"] {
   --vscode-editor-background: #1e1e1e;
-  --vscode-editor-foreground: #d4d4d4;
-  --vscode-chat-user-message-background: #2a2d3b;
-  --vscode-chat-assistant-message-background: #1e1e1e;
+  --vscode-editor-foreground: #cccccc;
+  --vscode-chat-user-message-background: #0078d4;
+  --vscode-chat-assistant-message-background: #2d2d30;
+  --vscode-border-color: #3c3c3c;
 }

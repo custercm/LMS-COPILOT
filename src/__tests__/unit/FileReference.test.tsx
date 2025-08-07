@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import FileReference from '../../webview/components/FileReference';
 import { FileReference as FileReferenceType } from '../../webview/types/api';
@@ -32,7 +32,7 @@ describe('FileReference Component', () => {
         />
       );
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /File reference: src\/components\/Example\.tsx at line 42/ })).toBeInTheDocument();
       expect(screen.getByText('Example.tsx')).toBeInTheDocument();
       expect(screen.getByText(':42')).toBeInTheDocument();
     });
@@ -88,7 +88,7 @@ describe('FileReference Component', () => {
         />
       );
 
-      await user.click(screen.getByRole('button'));
+      await user.click(screen.getByRole('button', { name: /File reference: src\/components\/Example\.tsx at line 42/ }));
 
       expect(mockOnOpenFile).toHaveBeenCalledWith('src/components/Example.tsx', 42);
     });
@@ -104,7 +104,7 @@ describe('FileReference Component', () => {
         />
       );
 
-      const button = screen.getByRole('button');
+      const button = screen.getByRole('button', { name: /File reference: src\/components\/Example\.tsx at line 42/ });
       expect(button).toHaveAttribute('aria-label', 'File reference: src/components/Example.tsx at line 42');
       expect(button).toHaveAttribute('title', 'Open src/components/Example.tsx at line 42');
     });

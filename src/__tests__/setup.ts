@@ -1,5 +1,18 @@
 import '@testing-library/jest-dom';
 
+// Configure React Testing Library to use React.act
+import { configure } from '@testing-library/react';
+
+configure({
+  asyncUtilTimeout: 2000,
+  // This helps with better error messages
+  getElementError: (message, container) => {
+    const error = new Error(message || 'TestingLibraryElementError');
+    error.name = 'TestingLibraryElementError';
+    return error;
+  },
+});
+
 // Mock VS Code API
 const mockVscode = {
   window: {

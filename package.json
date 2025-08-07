@@ -1,13 +1,15 @@
 {
   "name": "lms-copilot",
   "displayName": "LMS Copilot",
-  "description": "GitHub Copilot-style AI assistant powered by LM Studio",
-  "version": "0.0.1",
+  "description": "GitHub Copilot replica powered by local LM Studio AI - complete privacy and control",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Other"
+    "AI",
+    "Chat",
+    "Machine Learning"
   ],
   "activationEvents": [
     "onStartupFinished"
