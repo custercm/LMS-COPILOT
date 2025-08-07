@@ -148,6 +148,13 @@ export function createTestWebviewHook() {
         const endTime = Date.now();
         return { duration: endTime - startTime };
       }
+    },
+
+    // Validate hook usage for testing
+    validateHookUsage: (): boolean => {
+      return typeof mockVscode.postMessage === 'function' && 
+             typeof mockVscode.getState === 'function' && 
+             typeof mockVscode.setState === 'function';
     }
   };
 }

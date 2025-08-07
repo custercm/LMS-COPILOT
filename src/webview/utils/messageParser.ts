@@ -20,7 +20,7 @@ export function parseMessageContent(content: string): string {
 }
 
 // Extract code blocks from content
-export function extractCodeBlocks(content: string): Array<{code: string, language: string}> {
+function extractCodeBlocks(content: string): Array<{code: string, language: string}> {
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)\n```/g;
   const blocks: Array<{code: string, language: string}> = [];
   let match;
@@ -36,19 +36,19 @@ export function extractCodeBlocks(content: string): Array<{code: string, languag
 }
 
 // Check if content contains code blocks
-export function hasCodeBlocks(content: string): boolean {
+function hasCodeBlocks(content: string): boolean {
   return /```[\s\S]*?```/.test(content);
 }
 
 // Extract file paths from message content for reference handling with accessibility features
-export function extractFilePaths(content: string): string[] {
+function extractFilePaths(content: string): string[] {
   const filePathRegex = /(\w+\/[\w\-\.\/]+(?:\.\w+)?)/g; // Basic path extraction
   const matches = content.match(filePathRegex);
   return matches || [];
 }
 
 // Add accessibility support to file paths
-export function createAccessibleFilePath(path: string): string {
+function createAccessibleFilePath(path: string): string {
   return `Open ${path} in editor`;
 }
 

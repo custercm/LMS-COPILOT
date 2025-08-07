@@ -2,36 +2,88 @@ import React, { useState, useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
 import StreamingIndicator from './StreamingIndicator';
+import CommandPalette, { Command } from './CommandPalette';
 import { ChatResponse, ExtensionMessage, WebviewCommand, FileReference } from '../types/api';
-import { useWebviewApi } from '../hooks/useWebviewApi';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-  fileReferences?: FileReference[];
-}
+import { Message } from '../types/messages';
+import useWebviewApi from '../hooks/useWebviewApi';
+import { CommandHandler, CommandContext } from '../utils/commandHandler';
+import { CommandHistoryManager } from '../utils/commandHistory';
+import '../styles/ChatInterface.css';
 
 const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [fileReferences, setFileReferences] = useState<FileReference[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const webviewApi = useWebviewApi();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Command suggestions for auto-completion
-  const commandSuggestions = [
-    '/help',
-    '/clear',
-    '/explain',
-    '/workspace',
-    '/install',
-    '/run',
-    '/debug'
-  ];
+  // Create command context
+  const commandContext: CommandContext = {
+    sendMessage: (message: string) => {
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: message,
+        timestamp: Date.now()
+      };
+      setMessages(prev => [...prev, newMessage]);
+    },
+    sendCommand: (command: string, args?: string) => {
+      webviewApi.sendCommand(command, args);
+    },
+    clearChat: () => {
+      setMessages([]);
+    },
+    showError: (message: string) => {
+      setNotification({ type: 'error', message });
+      setTimeout(() => setNotification(null), 5000);
+    },
+    showSuccess: (message: string) => {
+      setNotification({ type: 'success', message });
+      setTimeout(() => setNotification(null), 3000);
+    }
+  };
 
+  // Initialize command handler
+  const commandHandler = new CommandHandler(commandContext);
+  const availableCommands = commandHandler.getCommands();
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Command palette shortcut
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+      
+      // Help shortcut
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'H') {
+        e.preventDefault();
+        commandHandler.executeCommand('/help');
+      }
+      
+      // Clear chat shortcut
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'L') {
+        e.preventDefault();
+        commandHandler.executeCommand('/clear');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Auto-hide notifications
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), notification.type === 'error' ? 5000 : 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
   // Handle incoming messages from extension
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -39,7 +91,11 @@ const ChatInterface: React.FC = () => {
       
       switch (message.command) {
         case 'addMessage':
-          setMessages(prev => [...prev, message.message]);
+          const newMessage: Message = {
+            ...message.message,
+            id: message.message.id || Date.now().toString()
+          };
+          setMessages(prev => [...prev, newMessage]);
           break;
         case 'showTypingIndicator':
           setIsLoading(true);
@@ -50,6 +106,7 @@ const ChatInterface: React.FC = () => {
         case 'handleError':
           // Handle error messages in UI
           console.error(message.message);
+          setNotification({ type: 'error', message: message.message });
           break;
       }
     };
@@ -75,7 +132,20 @@ const ChatInterface: React.FC = () => {
     
     // Check if it's a command
     if (content.startsWith('/')) {
-      webviewApi.sendCommand(content.split(' ')[0], content.substring(content.indexOf(' ') + 1));
+      const parsed = CommandHandler.parseCommand(content);
+      if (parsed) {
+        // Add user message to chat
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          role: 'user',
+          content,
+          timestamp: Date.now()
+        };
+        setMessages(prev => [...prev, userMessage]);
+        
+        // Execute command
+        commandHandler.executeCommand(parsed.command, parsed.args);
+      }
       return;
     }
 
@@ -91,12 +161,46 @@ const ChatInterface: React.FC = () => {
     
     // Send to backend for processing
     webviewApi.sendMessage({
-      type: 'message',
-      payload: {
-        content,
-        messageId: newMessage.id
-      }
+      command: 'sendMessage',
+      text: content
     });
+  };
+
+  const handleCommandSelect = (command: string, args?: string) => {
+    const fullCommand = args ? `${command} ${args}` : command;
+    
+    // Add user message to chat
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: fullCommand,
+      timestamp: Date.now()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Add to command history
+    CommandHistoryManager.addToHistory(command, args);
+    
+    // Execute command
+    const parsed = CommandHandler.parseCommand(fullCommand);
+    if (parsed) {
+      commandHandler.executeCommand(parsed.command, parsed.args);
+    }
+  };
+
+  const handleCommandPaletteSelect = (command: Command, args?: string) => {
+    // Add user message showing the command
+    const commandText = args ? `${command.name} ${args}` : command.name;
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: commandText,
+      timestamp: Date.now()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Execute the command
+    command.handler(args);
   };
 
   const handleFileAttachment = () => {
@@ -113,6 +217,28 @@ const ChatInterface: React.FC = () => {
 
   return (
     <div className="chat-interface">
+      {/* Notification system */}
+      {notification && (
+        <div className={`notification ${notification.type}`}>
+          <span className="notification-message">{notification.message}</span>
+          <button 
+            className="notification-close"
+            onClick={() => setNotification(null)}
+            aria-label="Close notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Command Palette */}
+      <CommandPalette
+        commands={availableCommands}
+        onCommandSelect={handleCommandPaletteSelect}
+        onClose={() => setShowCommandPalette(false)}
+        isVisible={showCommandPalette}
+      />
+
       {/* Loading state/skeleton loader */}
       {isLoading && (
         <div className="skeleton-loader-container">
@@ -130,12 +256,12 @@ const ChatInterface: React.FC = () => {
       <MessageList
         messages={messages}
         fileReferences={fileReferences}
-        onOpenFile={(reference: FileReference) => {
+        onOpenFile={(filePath: string) => {
           // Send command to open file in editor
           webviewApi.sendMessage({
             command: 'openFile',
-            filePath: reference.path,
-            lineNumber: reference.line
+            filePath: filePath,
+            lineNumber: undefined
           });
         }}
       />
@@ -163,25 +289,14 @@ const ChatInterface: React.FC = () => {
         </button>
       </div>
 
-      {/* Contextual menu and tooltip implementation */}
-      <div className="context-menu-container">
-        <InputArea
-          onSendMessage={handleSendMessage}
-          aria-label="Chat input area"
-        />
-
-        {/* Tooltips for actions */}
-        <button
-          className="tooltip-trigger"
-          data-tooltip="Send message"
-          aria-describedby="send-message-tooltip"
-        >
-          Send
-        </button>
-        <div id="send-message-tooltip" className="tooltip">
-          Click to send your message to the AI assistant
-        </div>
-      </div>
+      {/* Enhanced Input Area with command support */}
+      <InputArea
+        onSendMessage={handleSendMessage}
+        onCommandSelect={handleCommandSelect}
+        onShowCommandPalette={() => setShowCommandPalette(true)}
+        ariaLabel="Chat input area"
+        enableDragAndDrop={true}
+      />
 
       {/* Streaming indicator with micro-interactions */}
       <StreamingIndicator
@@ -195,41 +310,3 @@ const ChatInterface: React.FC = () => {
 };
 
 export default ChatInterface;
-
-// Add test utilities to existing component files
-
-import React, { useState } from 'react';
-import MessageList from './MessageList';
-import InputArea from './InputArea';
-import StreamingIndicator from './StreamingIndicator';
-
-interface ChatInterfaceProps {
-  // ... existing props ...
-}
-
-function ChatInterface({ 
-  messages,
-  onSendMessage,
-  isLoading,
-  streamingState,
-  onOpenFile
-}: ChatInterfaceProps) { ... }
-
-// Export test components for integration testing
-export const TestChatInterface = (props: ChatInterfaceProps) => {
-  return (
-    <div className="chat-interface-test">
-      <h3>Test Chat Interface</h3>
-      {/* For testing purposes */}
-      <MessageList 
-        messages={props.messages || []}
-        onOpenFile={onOpenFile}
-      />
-      <InputArea onSendMessage={onSendMessage} disabled={isLoading} />
-    </div>
-  );
-};
-
-export const TestStreamingIndicator = (props: {isStreaming?: boolean}) => (
-  <StreamingIndicator isStreaming={props.isStreaming || false} />
-);

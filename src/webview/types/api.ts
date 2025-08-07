@@ -25,6 +25,11 @@ export interface SendMessageCommand {
   text: string;
 }
 
+export interface CommandMessage {
+  type: 'command';
+  payload: any;
+}
+
 export interface ApplyChangeCommand {
   command: 'applyChange';
   changeId: string;
@@ -54,6 +59,11 @@ export interface OpenFileCommand {
   lineNumber?: number;
 }
 
+export interface PerformanceTestCommand {
+  type: 'performance-test';
+  payload: any;
+}
+
 export interface FileReference {
   path: string;
   line?: number;
@@ -66,15 +76,19 @@ export type WebviewCommand =
   | RunCodeCommand 
   | EditInEditorCommand 
   | RegenerateResponseCommand
-  | OpenFileCommand;
+  | OpenFileCommand
+  | PerformanceTestCommand
+  | CommandMessage;
 
 // Messages received from extension
 export interface AddMessageEvent {
   command: 'addMessage';
   message: {
+    id: string;
     role: 'user' | 'assistant';
     content: string;
     timestamp: number;
+    fileReferences?: FileReference[];
   };
 }
 

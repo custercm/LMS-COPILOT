@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import ChatInterface from './components/ChatInterface';
-import { useWebviewApi } from './hooks/useWebviewApi';
+import useWebviewApi from './hooks/useWebviewApi';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+}
 
 function App() {
   const webviewApi = useWebviewApi();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Add testing infrastructure to the app component
   useEffect(() => {
-    if (typeof window !== 'undefined' && LMStudioClient.isTestEnvironment()) {
+    if (typeof window !== 'undefined') {
       // Setup test hooks in development environment
       console.log('Testing infrastructure initialized');
 
@@ -28,19 +33,7 @@ function App() {
 
   return (
     <div className="app">
-      <ChatInterface 
-        messages={messages} 
-        onSendMessage={(content) => {
-          // Add loading state for better UX
-          setIsLoading(true);
-          // Simulate API call delay
-          setTimeout(() => {
-            setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content, timestamp: Date.now() }]);
-            setIsLoading(false);
-          }, 500)
-        }}
-        isLoading={isLoading}
-      />
+      <ChatInterface />
     </div>
   );
 }
@@ -65,3 +58,5 @@ export function runComponentTests(): Promise<{passed: number, failed: number}> {
     return Promise.resolve({ passed, failed });
   }
 }
+
+export default App;

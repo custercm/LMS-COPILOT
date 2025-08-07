@@ -1,4 +1,5 @@
 import axios from 'axios';
+import * as vscode from 'vscode';
 
 export interface LMStudioConfig {
   endpoint: string;        // Default: http://localhost:1234
@@ -95,7 +96,8 @@ ${structure}`;
       return response.data;
     } catch (error) {
       console.error('Error executing agent task:', error);
-      throw new Error(`Agent task failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Agent task failed: ${errorMessage}`);
     }
   }
 
@@ -110,7 +112,8 @@ ${structure}`;
       return response.data;
     } catch (error) {
       console.error('Error applying change:', error);
-      throw new Error(`Change application failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Change application failed: ${errorMessage}`);
     }
   }
 
@@ -122,7 +125,8 @@ ${structure}`;
       return response.data;
     } catch (error) {
       console.error('Error previewing change:', error);
-      throw new Error(`Change preview failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Change preview failed: ${errorMessage}`);
     }
   }
 
@@ -150,7 +154,8 @@ ${structure}`;
       return { safe: true, output: response.data.output };
     } catch (error) {
       console.error('Error executing terminal command:', error);
-      throw new Error(`Terminal execution failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Terminal execution failed: ${errorMessage}`);
     }
   }
 
@@ -220,46 +225,3 @@ ${structure}`;
     }
   }
 }
-
-// ... existing code ...
-
-  // Test methods for integration testing
-  public async testSendMessage(message: string): Promise<{success: boolean, response?: string}> {
-    try {
-      const response = await this.sendMessage(message);
-      return { success: true, response };
-    } catch (error) {
-      return { success: false, response: undefined };
-    }
-  }
-
-  public async testRunTerminalCommand(command: string): Promise<{success: boolean, result?: any}> {
-    try {
-      const result = await this.runTerminalCommand(command);
-      return { success: true, result };
-    } catch (error) {
-      return { success: false, result: undefined };
-    }
-  }
-
-  public static isTestEnvironment(): boolean {
-    // Check if we're in a test environment
-    return typeof process !== 'undefined' && 
-           (process.env.NODE_ENV === 'test' || 
-            process.env.VITEST !== undefined);
-  }
-
-  // Add performance benchmark method
-  public async runPerformanceBenchmark(message: string): Promise<{duration: number}> {
-    const startTime = Date.now();
-    
-    try {
-      await this.sendMessage(message);
-      
-      const endTime = Date.now();
-      return { duration: endTime - startTime };
-    } catch (error) {
-      const endTime = Date.now();
-      return { duration: endTime - startTime };
-    }
-  }

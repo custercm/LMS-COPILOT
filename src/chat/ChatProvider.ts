@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { LMStudioClient } from 'LMStudioClient';
+import { LMStudioClient } from '../lmstudio/LMStudioClient';
 
 export class ChatProvider implements vscode.WebviewViewProvider {
     private _webviewView: vscode.WebviewView | undefined;
@@ -553,10 +553,26 @@ export class ChatProvider implements vscode.WebviewViewProvider {
       try {
         // Test basic functionality
         const htmlContent = this.getHtmlForWebview({ 
-          asWebviewUri: (uri) => uri,
-          c   cspSource: 'test-source'
+          asWebviewUri: (uri: any) => uri,
+          cspSource: 'test-source'
         } as any);
         
         if (htmlContent && typeof htmlContent === 'string') {
           // Implement handling of HTML content
           this.processHtmlContent(htmlContent);
+          passed++;
+        } else {
+          failed++;
+        }
+      } catch (error) {
+        failed++;
+      }
+
+      return { passed, failed };
+    }
+
+    private processHtmlContent(htmlContent: string): void {
+      // Process HTML content
+      console.log('Processing HTML content:', htmlContent.length, 'characters');
+    }
+  }

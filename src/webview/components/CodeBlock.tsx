@@ -10,14 +10,14 @@ interface CodeBlockProps {
   code: string;
   language: string;
   onApplyChange?: (changeId: string) => void;
-  onChangeId?: string;
+  changeId?: string;
 }
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
   code,
   language,
   onApplyChange,
-  onChangeId
+  changeId
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCopiedToast, setShowCopiedToast] = useState(false);
@@ -40,7 +40,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
   // Apply changes functionality
   const applyChanges = () => {
-    if (onApplyChange && onChangeId) {
+    if (onApplyChange && changeId) {
       onApplyChange(changeId);
     }
   };
@@ -73,7 +73,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           Copy
         </button>
         
-        {onApplyChange && onChangeId && (
+        {onApplyChange && changeId && (
           <button 
             onClick={applyChanges}
             className="action-button apply-button"

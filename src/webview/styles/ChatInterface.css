@@ -170,3 +170,139 @@
 .input-area:focus-within {
   outline: 2px solid var(--vscode-chat-assistant-message-background);
 }
+
+/* Notification System */
+.notification {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  min-width: 300px;
+  max-width: 400px;
+  animation: slideInRight 0.3s ease-out;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.notification.success {
+  background-color: var(--vscode-notificationsInfoIcon-foreground);
+  color: var(--vscode-notifications-background);
+  border: 1px solid var(--vscode-notificationsInfoIcon-foreground);
+}
+
+.notification.error {
+  background-color: var(--vscode-notificationsErrorIcon-foreground);
+  color: var(--vscode-notifications-background);
+  border: 1px solid var(--vscode-notificationsErrorIcon-foreground);
+}
+
+.notification-message {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.notification-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* File attachment area improvements */
+.file-attachment-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-editor-background);
+}
+
+.attach-button {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.attach-button:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+/* Animation for notifications */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Enhanced hover effects */
+.message-item {
+  transition: all 0.2s ease;
+}
+
+.message-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Focus improvements for accessibility */
+.chat-interface *:focus {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.chat-interface button:focus,
+.chat-interface input:focus {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: -2px;
+}
+
+/* Responsive design enhancements */
+@media (max-width: 768px) {
+  .notification {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    max-width: none;
+    min-width: auto;
+  }
+  
+  .file-attachment-area {
+    padding: 6px 12px;
+  }
+  
+  .attach-button {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}

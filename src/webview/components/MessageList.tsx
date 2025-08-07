@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MessageItem from './MessageItem';
+import { Message } from '../types/messages';
+import { FileReference } from '../types/api';
 
 interface MessageListProps {
   messages: Message[];
@@ -105,17 +107,20 @@ function MessageList({
       >
         {visibleMessages.map((message, index) => (
           // Calculate actual index based on virtualization
-          <MessageItem 
+          <div
             key={message.id}
-            message={message}
-            onOpenFile={onOpenFile}
             style={{
               position: 'absolute',
               top: `${(startIndex + index) * MESSAGE_HEIGHT}px`,
               width: '100%',
               height: `${MESSAGE_HEIGHT}px`
             }}
-          />
+          >
+            <MessageItem 
+              message={message}
+              onOpenFile={onOpenFile}
+            />
+          </div>
         ))}
       </div>
 
@@ -124,3 +129,5 @@ function MessageList({
     </div>
   );
 }
+
+export default MessageList;

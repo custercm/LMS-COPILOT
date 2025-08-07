@@ -10,6 +10,7 @@ interface TaskStep {
 }
 
 interface Task {
+  description: string;
   execute(): Promise<any>;
 }
 

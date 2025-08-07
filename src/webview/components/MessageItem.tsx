@@ -2,9 +2,10 @@ import React from 'react';
 import { parseMessageContent } from '../utils/messageParser';
 import CodeBlock from './CodeBlock';
 import DiffViewer from './DiffViewer';
+import { ChatMessage } from '../types/messages';
 
 interface MessageItemProps {
-  message: AssistantMessage;
+  message: ChatMessage;
   onOpenFile?: (filePath: string) => void;
   // Add new prop for media file handling
   onHandleMediaOperation?: (filePath: string, operation: 'preview' | 'convert' | 'metadata') => void;
@@ -77,13 +78,22 @@ function MessageItem({
     // Render code blocks if present
     const hasCode = hasCodeBlocks(message.content);
     if (hasCode) {
+      // Extract code blocks from content
+      const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+      const matches = [...message.content.matchAll(codeBlockRegex)];
+      
       return (
         <div className="message-content">
           {parseMessageContent(message.content)}
-          <CodeBlock
-            content={message.content}
-            onOpenFile={onOpenFile}
-          />
+          {matches.map((match, index) => (
+            <CodeBlock
+              key={index}
+              code={match[2] || ''}
+              language={match[1] || 'text'}
+              onApplyChange={undefined}
+              changeId={undefined}
+            />
+          ))}
         </div>
       );
     }

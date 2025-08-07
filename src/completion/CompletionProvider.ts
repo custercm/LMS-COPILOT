@@ -16,7 +16,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
     // Mock completion items - in a real implementation these would come from the LM Studio client
     return [
       {
-        text: "// This is a sample completion\nconsole.log('Hello world');",
+        insertText: "// This is a sample completion\nconsole.log('Hello world');",
         range: new vscode.Range(position, position),
         command: {
           title: 'Accept Completion',
@@ -24,7 +24,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
         }
       },
       {
-        text: "function example() {\n  return true;\n}",
+        insertText: "function example() {\n  return true;\n}",
         range: new vscode.Range(position, position),
         command: {
           title: 'Accept Completion',
@@ -42,7 +42,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
     // and receive multi-line code completions
     return [
       {
-        text: `// Based on your current context (${contextAnalysis}), here's a suggested multi-line completion:\n\nconst result = await fetch('/api/data');\nif (result.ok) {\n  const data = await result.json();\n  // Process the data\n}\n`,
+        insertText: `// Based on your current context (${contextAnalysis}), here's a suggested multi-line completion:\n\nconst result = await fetch('/api/data');\nif (result.ok) {\n  const data = await result.json();\n  // Process the data\n}\n`,
         range: new vscode.Range(position, position),
         command: {
           title: 'Accept Multi-line Completion',
@@ -60,7 +60,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
       // Generate code based on comment content
       return [
         {
-          text: `// This is the generated implementation for your comment\nfunction ${this.extractFunctionNameFromComment(line.text)}() {\n  // TODO: Implement functionality\n}\n`,
+          insertText: `// This is the generated implementation for your comment\nfunction ${this.extractFunctionNameFromComment(line.text)}() {\n  // TODO: Implement functionality\n}\n`,
           range: new vscode.Range(position, position),
           command: {
             title: 'Accept Generated Code',
@@ -95,7 +95,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
     // Create ghost text suggestions that don't immediately commit
     return [
       {
-        text: "// Ghost text suggestion based on context\nconsole.log('Suggested completion');",
+        insertText: "// Ghost text suggestion based on context\nconsole.log('Suggested completion');",
         range: new vscode.Range(position, position),
         command: {
           title: 'Accept Ghost Text',
