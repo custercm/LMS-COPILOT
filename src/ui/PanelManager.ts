@@ -34,12 +34,11 @@ class PanelManager {
 
   createPanel(): void {
     if (this.currentPanel) {
-      // If panel already exists, show it
       this.currentPanel.reveal();
       return;
     }
 
-    // Create new webview panel
+    // PRESERVE ALL EXISTING PANEL CREATION LOGIC
     this.currentPanel = vscode.window.createWebviewPanel(
       this.configuration.viewType,
       this.configuration.title,
@@ -50,10 +49,9 @@ class PanelManager {
       }
     );
 
-    // Create ChatPanel instance for this panel
     this.chatPanel = new ChatPanel(this.currentPanel.webview);
 
-    // Set up message handler callback if available
+    // ADD NULL SAFETY
     if (this.messageHandler) {
       this.chatPanel.setMessageHandler(async (text: string) => {
         try {
@@ -63,19 +61,20 @@ class PanelManager {
         }
       });
 
-      // Wire the message handler to use this chat panel
+      // Wire AFTER setting up the callback
       this.messageHandler.setChatPanel(this.chatPanel);
+    } else {
+      console.warn('PanelManager: MessageHandler not set, chat functionality will be limited');
     }
 
-    // Initialize the chat panel
     this.chatPanel.init();
 
-    // Handle other non-chat messages from webview
+    // PRESERVE ALL EXISTING MESSAGE HANDLING
     this.currentPanel.webview.onDidReceiveMessage(async message => {
       await this.handleWebviewMessage(message);
     });
 
-    // Handle when panel is disposed
+    // PRESERVE ALL EXISTING DISPOSAL LOGIC
     this.currentPanel.onDidDispose(() => {
       this.currentPanel = null;
       this.chatPanel = null;
@@ -95,6 +94,9 @@ class PanelManager {
           } catch (error) {
             this.chatPanel.addMessage('assistant', `Error analyzing file: ${(error as Error).message}`);
           }
+        } else {
+          console.warn('PanelManager: AgentManager not available for file analysis');
+          this.chatPanel.addMessage('assistant', 'File analysis not available - agent manager not initialized');
         }
         break;
       
@@ -106,6 +108,9 @@ class PanelManager {
           } catch (error) {
             this.chatPanel.addMessage('assistant', `Command Error: ${(error as Error).message}`);
           }
+        } else {
+          console.warn('PanelManager: AgentManager not available for command execution');
+          this.chatPanel.addMessage('assistant', 'Command execution not available - agent manager not initialized');
         }
         break;
     }
@@ -137,6 +142,8 @@ class PanelManager {
         : vscode.ViewColumn.Two;
       
       this.currentPanel.reveal(viewColumn);
+    } else {
+      console.warn('PanelManager: Cannot switch position, no active panel');
     }
   }
 

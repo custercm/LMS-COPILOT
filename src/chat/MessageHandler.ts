@@ -25,11 +25,13 @@ export class MessageHandler {
   // Process incoming messages and route to appropriate handlers
   async handleMessage(message: string, source: 'provider' | 'panel' = 'provider'): Promise<string> {
     try {
-      // Add user message to display
+      // Add user message to display with null safety
       if (source === 'provider' && this.chatProvider) {
         // ChatProvider handles its own message display
       } else if (source === 'panel' && this.chatPanel) {
         this.chatPanel.addMessage('user', message);
+      } else {
+        console.warn(`MessageHandler: No ${source} available for message display`);
       }
 
       // Process the message
@@ -41,11 +43,13 @@ export class MessageHandler {
     } catch (error) {
       const errorMessage = `Error processing message: ${(error as Error).message}`;
       
-      // Add error message to display
+      // Add error message to display with null safety
       if (source === 'provider' && this.chatProvider) {
         // ChatProvider handles its own error display
       } else if (source === 'panel' && this.chatPanel) {
         this.chatPanel.addMessage('assistant', errorMessage);
+      } else {
+        console.error(`MessageHandler: No ${source} available for error display:`, errorMessage);
       }
       
       return errorMessage;
@@ -61,8 +65,11 @@ export class MessageHandler {
       case 'clear':
         if (this.chatPanel) {
           this.chatPanel.clearMessages();
+          return 'Chat cleared.';
+        } else {
+          console.warn('MessageHandler: No chat panel available for clearing messages');
+          return 'Chat clear requested, but no active chat panel.';
         }
-        return 'Chat cleared.';
       case 'workspace':
         return await this.getWorkspaceInfo();
       case 'model':
@@ -97,9 +104,11 @@ export class MessageHandler {
     // Add AI response to history
     this.agentManager.getConversationHistory().addMessage('assistant', response);
     
-    // Add response to display
+    // Add response to display with null safety
     if (this.chatPanel) {
       this.chatPanel.addMessage('assistant', response);
+    } else {
+      console.warn('MessageHandler: No chat panel available for response display');
     }
     
     return response;
