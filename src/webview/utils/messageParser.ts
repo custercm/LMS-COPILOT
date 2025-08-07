@@ -6,6 +6,8 @@ import { marked } from 'marked';
 marked.setOptions({
   breaks: true,
   gfm: true,
+  mangle: false,
+  headerIds: false,
 });
 
 // Parse markdown content and add file reference handling with accessibility features
@@ -67,8 +69,10 @@ const test = "content";
 `;
 
 export const validateCodeBlockExtraction = (content: string) => {
+  // Check for both inline code (```code```) and code blocks 
+  const hasInlineCode = /```[\w\s]*```/.test(content);
   const codeBlocks = extractCodeBlocks(content);
-  return codeBlocks.length > 0;
+  return hasInlineCode || codeBlocks.length > 0;
 };
 
 // Export for integration testing

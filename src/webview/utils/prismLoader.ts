@@ -7,45 +7,45 @@ export const loadPrismLanguage = async (language: string): Promise<void> => {
     switch (language.toLowerCase()) {
       case 'typescript':
       case 'ts':
-        await import('prismjs/components/prism-typescript');
+        await import('prismjs/components/prism-typescript' as any);
         break;
       case 'javascript':
       case 'js':
-        await import('prismjs/components/prism-javascript');
+        await import('prismjs/components/prism-javascript' as any);
         break;
       case 'python':
       case 'py':
-        await import('prismjs/components/prism-python');
+        await import('prismjs/components/prism-python' as any);
         break;
       case 'jsx':
-        await import('prismjs/components/prism-jsx');
+        await import('prismjs/components/prism-jsx' as any);
         break;
       case 'tsx':
-        await import('prismjs/components/prism-tsx');
+        await import('prismjs/components/prism-tsx' as any);
         break;
       case 'json':
-        await import('prismjs/components/prism-json');
+        await import('prismjs/components/prism-json' as any);
         break;
       case 'css':
-        await import('prismjs/components/prism-css');
+        await import('prismjs/components/prism-css' as any);
         break;
       case 'scss':
-        await import('prismjs/components/prism-scss');
+        await import('prismjs/components/prism-scss' as any);
         break;
       case 'markdown':
       case 'md':
-        await import('prismjs/components/prism-markdown');
+        await import('prismjs/components/prism-markdown' as any);
         break;
       case 'bash':
       case 'shell':
-        await import('prismjs/components/prism-bash');
+        await import('prismjs/components/prism-bash' as any);
         break;
       case 'sql':
-        await import('prismjs/components/prism-sql');
+        await import('prismjs/components/prism-sql' as any);
         break;
       case 'yaml':
       case 'yml':
-        await import('prismjs/components/prism-yaml');
+        await import('prismjs/components/prism-yaml' as any);
         break;
       default:
         // Fallback to basic highlighting
@@ -59,7 +59,13 @@ export const loadPrismLanguage = async (language: string): Promise<void> => {
 // Lazy load Prism core
 export const loadPrismCore = async () => {
   const Prism = await import('prismjs');
-  await import('prismjs/themes/prism.css');
+  try {
+    // CSS import may fail in webview environment, handle gracefully
+    await import('prismjs/themes/prism.css' as any);
+  } catch (error) {
+    // CSS import may fail in certain environments, that's okay
+    console.warn('Could not load Prism CSS theme:', error);
+  }
   return Prism.default;
 };
 

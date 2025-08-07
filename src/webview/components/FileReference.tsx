@@ -27,6 +27,12 @@ const FileReference: React.FC<FileReferenceProps> = ({
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  // Get file extension for icon determination
+  const getFileExtension = (filePath: string): string => {
+    const parts = filePath.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+  };
+
   // Determine if this is a media file
   const getMimeType = (filePath: string): string => {
     const ext = getFileExtension(filePath);
@@ -40,12 +46,6 @@ const FileReference: React.FC<FileReferenceProps> = ({
   
   const fileCategory = categorizeFile(getMimeType(reference.path));
   const isMediaFile = ['image', 'document', 'data'].includes(fileCategory);
-
-  // Get file extension for icon determination
-  const getFileExtension = (filePath: string): string => {
-    const parts = filePath.split('.');
-    return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
-  };
 
   // Get VS Code-style file icon based on extension
   const getFileIcon = (filePath: string): string => {
