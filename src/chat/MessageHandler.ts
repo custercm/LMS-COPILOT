@@ -70,6 +70,18 @@ export class MessageHandler {
           return await this.changeModel(args[0]);
         }
         return 'Current model: ' + (await this.getCurrentModel());
+      case 'tools':
+        return this.getAvailableTools();
+      case 'task':
+        if (args.length > 0) {
+          return await this.executeTask(args.join(' '));
+        }
+        return 'Usage: /task <task description>';
+      case 'agent':
+        if (args[0] === 'status') {
+          return this.getAgentStatus();
+        }
+        return 'Usage: /agent status';
       default:
         return `Unknown command: ${cmd}. Type /help for available commands.`;
     }
@@ -79,7 +91,7 @@ export class MessageHandler {
     // Add user message to conversation history
     this.agentManager.getConversationHistory().addMessage('user', message);
     
-    // Process with AI agent
+    // Process with AI agent (now includes TaskExecutor and ToolRegistry integration)
     const response = await this.agentManager.processMessage(message);
     
     // Add AI response to history
@@ -100,6 +112,9 @@ Available commands:
 • /clear - Clear chat history
 • /workspace - Show workspace information
 • /model [name] - Change or show current model
+• /tools - Show available agent tools
+• /task <description> - Execute a specific task
+• /agent status - Show agent status
 
 You can also ask me anything about your code, and I'll help you with:
 • Code analysis and explanation
@@ -108,6 +123,42 @@ You can also ask me anything about your code, and I'll help you with:
 • Terminal commands
 • And much more!
 `;
+  }
+
+  private getAvailableTools(): string {
+    const toolRegistry = this.agentManager.getToolRegistry();
+    const tools = toolRegistry.getAllTools();
+    
+    if (tools.length === 0) {
+      return 'No tools are currently available.';
+    }
+    
+    let result = 'Available Agent Tools:\n';
+    tools.forEach((tool: any) => {
+      result += `• ${tool.name} (${tool.securityLevel}): ${tool.description}\n`;
+    });
+    
+    return result;
+  }
+
+  private async executeTask(taskDescription: string): Promise<string> {
+    try {
+      const result = await this.agentManager.processTask(taskDescription);
+      return `Task executed successfully:\n${JSON.stringify(result, null, 2)}`;
+    } catch (error) {
+      return `Task execution failed: ${(error as Error).message}`;
+    }
+  }
+
+  private getAgentStatus(): string {
+    const history = this.agentManager.getConversationHistory();
+    const messages = history.getMessages();
+    
+    return `Agent Status:
+• Conversation messages: ${messages.length}
+• Task executor: Available
+• Tool registry: Available
+• Capabilities: File operations, Terminal access, Workspace analysis, Code generation, Planning`;
   }
 
   private async getWorkspaceInfo(): Promise<string> {

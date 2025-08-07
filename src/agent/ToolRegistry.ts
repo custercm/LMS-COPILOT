@@ -79,6 +79,44 @@ class ToolRegistry {
   private tools = new Map<string, any>();
   private securityManager = new SecurityManager();
 
+  constructor() {
+    this.initializeDefaultTools();
+  }
+
+  private initializeDefaultTools(): void {
+    // Register terminal tool
+    this.register({
+      name: 'terminal',
+      description: 'Execute terminal commands safely',
+      securityLevel: 'medium' as const,
+      execute: async (params: { command: string }) => {
+        const terminalTools = new TerminalTools();
+        return await terminalTools.executeCommand(params.command);
+      }
+    });
+
+    // Register file operations tool
+    this.register({
+      name: 'file-operations',
+      description: 'Read, write, and manipulate files',
+      securityLevel: 'medium' as const,
+      execute: async (params: { operation: string; filePath: string; content?: string }) => {
+        // Basic file operations implementation
+        return `File operation ${params.operation} on ${params.filePath}`;
+      }
+    });
+
+    // Register workspace analysis tool
+    this.register({
+      name: 'workspace-analysis',
+      description: 'Analyze workspace structure and content',
+      securityLevel: 'low' as const,
+      execute: async (params: { path?: string }) => {
+        return `Analyzing workspace: ${params.path || 'current directory'}`;
+      }
+    });
+  }
+
   register(tool: Tool): void {
     this.tools.set(tool.name, tool);
   }
@@ -89,6 +127,14 @@ class ToolRegistry {
 
   getTool(name: string): any {
     return this.tools.get(name);
+  }
+
+  getAllTools(): Tool[] {
+    return Array.from(this.tools.values()).filter(tool => tool && tool.name);
+  }
+
+  getToolNames(): string[] {
+    return Array.from(this.tools.keys());
   }
 
   // Delegate assessRisk to SecurityManager

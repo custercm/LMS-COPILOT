@@ -1,5 +1,7 @@
 import { LMStudioClient } from '../lmstudio/LMStudioClient';
 import { ConversationHistory } from './ConversationHistory';
+import { TaskExecutor } from './TaskExecutor';
+import { ToolRegistry } from './ToolRegistry';
 import * as FileOperations from '../tools/FileOperations';
 import { TerminalTools } from '../tools/TerminalTools';
 
@@ -15,27 +17,76 @@ export interface AgentCapabilities {
 export class AgentManager {
   private lmStudioClient: LMStudioClient;
   private conversationHistory: ConversationHistory;
+  private taskExecutor: TaskExecutor;
+  private toolRegistry: ToolRegistry;
 
   constructor(lmStudioClient: LMStudioClient) {
     this.lmStudioClient = lmStudioClient;
     this.conversationHistory = new ConversationHistory();
+    
+    // Define default agent capabilities
+    const capabilities: AgentCapabilities = {
+      fileOperations: true,
+      terminalAccess: true,
+      workspaceAnalysis: true,
+      codeGeneration: true,
+      planning: true,
+      tools: {}
+    };
+    
+    this.taskExecutor = new TaskExecutor(lmStudioClient, capabilities);
+    this.toolRegistry = new ToolRegistry();
   }
 
   async processMessage(message: string): Promise<string> {
     // Add message to history
     this.conversationHistory.addMessage('user', message);
 
-    // Process with LM Studio
-    const response = await this.lmStudioClient.sendMessage(message);
+    // Check if this is a task or action request
+    if (this.isTaskRequest(message)) {
+      // Use TaskExecutor for complex tasks
+      const taskResult = await this.taskExecutor.executeTask({
+        description: message,
+        execute: async () => {
+          return await this.lmStudioClient.sendMessage(message);
+        }
+      });
+      
+      // Add response to history
+      this.conversationHistory.addMessage('assistant', taskResult.toString());
+      return taskResult.toString();
+    } else {
+      // Process with LM Studio for regular chat
+      const response = await this.lmStudioClient.sendMessage(message);
 
-    // Add response to history
-    this.conversationHistory.addMessage('assistant', response);
+      // Add response to history
+      this.conversationHistory.addMessage('assistant', response);
 
-    return response;
+      return response;
+    }
+  }
+  
+  private isTaskRequest(message: string): boolean {
+    // Detect if message contains task-related keywords
+    const taskKeywords = [
+      'create', 'generate', 'build', 'implement', 'execute', 'run',
+      'file', 'folder', 'command', 'terminal', 'workspace', 'analyze'
+    ];
+    
+    const lowercaseMessage = message.toLowerCase();
+    return taskKeywords.some(keyword => lowercaseMessage.includes(keyword));
   }
 
   getConversationHistory(): ConversationHistory {
     return this.conversationHistory;
+  }
+  
+  getTaskExecutor(): TaskExecutor {
+    return this.taskExecutor;
+  }
+  
+  getToolRegistry(): ToolRegistry {
+    return this.toolRegistry;
   }
 
   // This function already exists in the original code
@@ -52,8 +103,15 @@ export class AgentManager {
 
   // This function already exists in the original code
   async executeTerminalCommand(command: string): Promise<string> {
-    const result = await this.lmStudioClient.runTerminalCommand(command);
-    return result.output || "Command executed successfully";
+    // Use ToolRegistry to get the terminal tool and execute command
+    const terminalTool = this.toolRegistry.getTool('terminal');
+    if (terminalTool) {
+      return await terminalTool.execute({ command });
+    } else {
+      // Fallback to LMStudioClient
+      const result = await this.lmStudioClient.runTerminalCommand(command);
+      return result.output || "Command executed successfully";
+    }
   }
 
   // This function already exists in the original code
@@ -81,9 +139,19 @@ export class AgentManager {
     };
 
   async processTask(taskDescription: string): Promise<any> {
+    // Use TaskExecutor for better task handling
+    const task = {
+      description: taskDescription,
+      execute: async () => {
+        return await this.lmStudioClient.executeAgentTask(taskDescription);
+      }
+    };
+    
+    const result = await this.taskExecutor.executeTask(task);
+    
     return {
       type: 'response',
-      content: await this.lmStudioClient.executeAgentTask(taskDescription),
+      content: result,
       timestamp: new Date()
     };
   }
