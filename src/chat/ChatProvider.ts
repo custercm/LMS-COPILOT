@@ -3,7 +3,7 @@ import { LMStudioClient } from '../lmstudio/LMStudioClient';
 import { SecurityManager, AuditEntry, ValidationResult } from '../security/SecurityManager';
 import { PermissionsManager, PermissionResult } from '../security/PermissionsManager';
 import { RateLimiter, RateLimitResult } from '../security/RateLimiter';
-import { AdaptiveSecurityManager, SecurityConfigManager, SecurityLevel } from '../security/AdaptiveSecurity';
+import { AdaptiveSecurityManager, SecurityConfigManager, SecurityLevel, AdaptiveValidationResult } from '../security/AdaptiveSecurity';
 
 export class ChatProvider implements vscode.WebviewViewProvider {
     private _webviewView: vscode.WebviewView | undefined;
@@ -67,7 +67,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             try {
                 // Rate limit check for all incoming messages (if enabled by adaptive security)
                 if (this.adaptiveSecurity.shouldRateLimit('chat_messages')) {
-                    const rateLimitResult = this.rateLimiter.checkLimit('chat_messages');
+                    const rateLimitResult: RateLimitResult = this.rateLimiter.checkLimit('chat_messages');
                     if (!rateLimitResult.allowed) {
                         webviewView.webview.postMessage({
                             command: 'error',
@@ -116,7 +116,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
                     case 'openFile':
                         // Handle opening files from the webview with permission check (if enabled)
                         if (this.adaptiveSecurity.shouldCheckFilePermissions()) {
-                            const permissionResult = await this.permissionsManager.checkPermission(
+                            const permissionResult: PermissionResult = await this.permissionsManager.checkPermission(
                                 sanitizedMessage.filePath, 
                                 'READ'
                             );
@@ -235,7 +235,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             
             // Add rate limiting for API calls (if enabled by adaptive security)
             if (this.adaptiveSecurity.shouldRateLimit('api_calls')) {
-                const rateLimitResult = this.rateLimiter.checkLimit('api_calls');
+                const rateLimitResult: RateLimitResult = this.rateLimiter.checkLimit('api_calls');
                 if (!rateLimitResult.allowed) {
                     throw new Error(`API call rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`);
                 }
@@ -375,13 +375,13 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             }
 
             // Adaptive security validation
-            const adaptiveValidation = this.adaptiveSecurity.validateCommand(code);
+            const adaptiveValidation: AdaptiveValidationResult = this.adaptiveSecurity.validateCommand(code);
             if (!adaptiveValidation.isValid) {
                 throw new Error(`Command blocked by adaptive security: ${adaptiveValidation.reason}`);
             }
             
             // Security validation for terminal command
-            const validationResult = this.securityManager.validateTerminalCommand(code);
+            const validationResult: ValidationResult = this.securityManager.validateTerminalCommand(code);
             if (!validationResult.isValid) {
                 if (validationResult.requiresApproval) {
                     const approved = await this.permissionsManager.requestUserPermission(

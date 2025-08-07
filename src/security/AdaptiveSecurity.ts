@@ -10,6 +10,11 @@ export enum SecurityLevel {
   STRICT = 'strict'          // Full security (enterprise/public)
 }
 
+export interface AdaptiveValidationResult {
+  isValid: boolean;
+  reason?: string;
+}
+
 export interface SecurityConfig {
   level: SecurityLevel;
   enableRateLimiting: boolean;
@@ -186,7 +191,7 @@ export class AdaptiveSecurityManager {
     ].join('; ');
   }
 
-  public validateCommand(command: string): { isValid: boolean; reason?: string } {
+  public validateCommand(command: string): AdaptiveValidationResult {
     if (!this.shouldValidateCommand(command)) {
       return { isValid: true };
     }
