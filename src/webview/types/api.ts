@@ -83,6 +83,10 @@ export interface CreateFileCommand {
   requestId: string;
 }
 
+export interface WebviewReadyCommand {
+  command: 'webviewReady';
+}
+
 export interface PerformanceTestCommand {
   type: 'performance-test';
   payload: any;
@@ -104,6 +108,7 @@ export type WebviewCommand =
   | PreviewFileCommand
   | FileUploadCommand
   | CreateFileCommand
+  | WebviewReadyCommand
   | PerformanceTestCommand
   | CommandMessage;
 

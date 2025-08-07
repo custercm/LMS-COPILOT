@@ -48,6 +48,14 @@ const App = React.memo(() => {
     });
   }, [memoryManager]);
 
+  // Signal to VS Code that webview is ready
+  useEffect(() => {
+    // Signal to VS Code that webview is ready
+    if (webviewApi) {
+      webviewApi.sendMessage({ command: 'webviewReady' });
+    }
+  }, [webviewApi]);
+
   // Memoized initialization with performance optimizations
   const initializeApp = useCallback(async () => {
     if (typeof window !== 'undefined') {

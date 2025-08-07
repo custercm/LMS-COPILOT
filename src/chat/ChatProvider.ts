@@ -21,6 +21,8 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     private extensionUri: vscode.Uri;
     private messageHandler: MessageHandler;
     private agentManager: AgentManager;
+    private webviewReady: boolean = false;
+    private pendingMessages: any[] = [];
 
     constructor(
         client: LMStudioClient, 
@@ -70,15 +72,13 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         // Store the webview reference for later use
         this._webviewView = webviewView;
         
-        // Add CSP header to webview content for security
-        const cspSource = webviewView.webview.cspSource;
+        // PRESERVE ALL EXISTING WEBVIEW OPTIONS
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [
                 vscode.Uri.joinPath(this.extensionUri, 'dist')
             ],
-            // Content Security Policy for enhanced security
-             portMapping: [
+            portMapping: [
                 {
                     webviewPort: 3000,
                     extensionHostPort: 3000
@@ -89,132 +89,159 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         // Set the HTML content for the webview
         webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
 
-        // Handle messages from the webview
+        // WAIT for webview to be ready before setting up message handler
+        this.setupWebviewReadyDetection(webviewView);
+    }
+
+    private setupWebviewReadyDetection(webviewView: vscode.WebviewView): void {
+        // Set up message handler immediately but queue messages until ready
         webviewView.webview.onDidReceiveMessage(async (message) => {
-            try {
-                // Rate limit check for all incoming messages (if enabled by adaptive security)
-                if (this.adaptiveSecurity.shouldRateLimit('chat_messages')) {
-                    const rateLimitResult: RateLimitResult = this.rateLimiter.checkLimit('chat_messages');
-                    if (!rateLimitResult.allowed) {
-                        webviewView.webview.postMessage({
-                            command: 'error',
-                            message: `Rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`
-                        });
-                        return;
-                    }
+            if (message.command === 'webviewReady') {
+                this.webviewReady = true;
+                // Process any pending messages
+                for (const pendingMessage of this.pendingMessages) {
+                    await this.processWebviewMessage(pendingMessage);
                 }
+                this.pendingMessages = [];
+                return;
+            }
+            
+            if (!this.webviewReady) {
+                this.pendingMessages.push(message);
+                return;
+            }
+            
+            await this.processWebviewMessage(message);
+        });
+    }
 
-                // Sanitize incoming message using adaptive security
-                const sanitizedMessage = {
-                    ...message,
-                    text: message.text ? this.adaptiveSecurity.sanitizeInput(message.text) : message.text,
-                    content: message.content ? this.adaptiveSecurity.sanitizeInput(message.content) : message.content,
-                    code: message.code ? this.adaptiveSecurity.sanitizeInput(message.code) : message.code
-                };
+    private async processWebviewMessage(message: any): Promise<void> {
+        // MOVE ALL EXISTING MESSAGE PROCESSING LOGIC HERE
+        // This preserves all existing functionality while adding proper sequencing
+        
+        try {
+            // PRESERVE ALL EXISTING RATE LIMITING LOGIC
+            if (this.adaptiveSecurity.shouldRateLimit('chat_messages')) {
+                const rateLimitResult: RateLimitResult = this.rateLimiter.checkLimit('chat_messages');
+                if (!rateLimitResult.allowed) {
+                    this._webviewView?.webview.postMessage({
+                        command: 'error',
+                        message: `Rate limit exceeded: ${rateLimitResult.reason}. Try again in ${rateLimitResult.retryAfter} seconds.`
+                    });
+                    return;
+                }
+            }
 
-                switch (sanitizedMessage.command) {
-                    case 'sendMessage':
-                        await this.handleSendMessage(sanitizedMessage.text);
-                        return;
-                    case 'getModels':
-                        await this.handleGetModels();
-                        return;
-                    case 'setModel':
-                        await this.handleSetModel(sanitizedMessage.model);
-                        return;
-                    case 'analyzeWorkspace':
-                        await this.handleAnalyzeWorkspace(sanitizedMessage.structure);
-                        return;
-                    case 'getWorkspaceStructure':
-                        await this.handleGetWorkspaceStructure();
-                        return;
-                    case 'applyChange':
-                        await this.handleApplyChange(sanitizedMessage.changeId, sanitizedMessage.content);
-                        return;
-                    case 'runCode':
-                        await this.handleRunCode(sanitizedMessage.code, sanitizedMessage.changeId);
-                        return;
-                    case 'editInEditor':
-                        await this.handleEditInEditor(sanitizedMessage.content, sanitizedMessage.changeId);
-                        return;
-                    case 'regenerateResponse':
-                        await this.handleRegenerateResponse(sanitizedMessage.changeId);
-                        return;
-                    case 'fileUpload':
-                        await this.handleFileUpload(sanitizedMessage.files, sanitizedMessage.requestId);
-                        return;
-                    case 'createFile':
-                        await this.handleCreateFile(sanitizedMessage.filePath, sanitizedMessage.content, sanitizedMessage.requestId);
-                        return;
-                    case 'openFile':
-                        // Handle opening files from the webview with permission check (if enabled)
-                        if (this.adaptiveSecurity.shouldCheckFilePermissions()) {
-                            const permissionResult: PermissionResult = await this.permissionsManager.checkPermission(
-                                sanitizedMessage.filePath, 
-                                'READ'
-                            );
-                            
-                            if (!permissionResult.allowed) {
-                                if (permissionResult.requiresUserConfirmation) {
-                                    const approved = await this.permissionsManager.requestUserPermission(
-                                        'read file',
-                                        sanitizedMessage.filePath,
-                                        permissionResult.details || 'Open file in editor'
-                                    );
-                                    
-                                    if (!approved) {
-                                        webviewView.webview.postMessage({
-                                            command: 'error',
-                                            message: `Permission denied: ${permissionResult.reason}`
-                                        });
-                                        return;
-                                    }
-                                } else {
-                                    webviewView.webview.postMessage({
+            // PRESERVE ALL EXISTING SANITIZATION LOGIC
+            const sanitizedMessage = {
+                ...message,
+                text: message.text ? this.adaptiveSecurity.sanitizeInput(message.text) : message.text,
+                content: message.content ? this.adaptiveSecurity.sanitizeInput(message.content) : message.content,
+                code: message.code ? this.adaptiveSecurity.sanitizeInput(message.code) : message.code
+            };
+
+            // PRESERVE ALL EXISTING SWITCH CASE LOGIC EXACTLY
+            switch (sanitizedMessage.command) {
+                case 'sendMessage':
+                    await this.handleSendMessage(sanitizedMessage.text);
+                    return;
+                case 'getModels':
+                    await this.handleGetModels();
+                    return;
+                case 'setModel':
+                    await this.handleSetModel(sanitizedMessage.model);
+                    return;
+                case 'analyzeWorkspace':
+                    await this.handleAnalyzeWorkspace(sanitizedMessage.structure);
+                    return;
+                case 'getWorkspaceStructure':
+                    await this.handleGetWorkspaceStructure();
+                    return;
+                case 'applyChange':
+                    await this.handleApplyChange(sanitizedMessage.changeId, sanitizedMessage.content);
+                    return;
+                case 'runCode':
+                    await this.handleRunCode(sanitizedMessage.code, sanitizedMessage.changeId);
+                    return;
+                case 'editInEditor':
+                    await this.handleEditInEditor(sanitizedMessage.content, sanitizedMessage.changeId);
+                    return;
+                case 'regenerateResponse':
+                    await this.handleRegenerateResponse(sanitizedMessage.changeId);
+                    return;
+                case 'fileUpload':
+                    await this.handleFileUpload(sanitizedMessage.files, sanitizedMessage.requestId);
+                    return;
+                case 'createFile':
+                    await this.handleCreateFile(sanitizedMessage.filePath, sanitizedMessage.content, sanitizedMessage.requestId);
+                    return;
+                case 'openFile':
+                    // Handle opening files from the webview with permission check (if enabled)
+                    if (this.adaptiveSecurity.shouldCheckFilePermissions()) {
+                        const permissionResult: PermissionResult = await this.permissionsManager.checkPermission(
+                            sanitizedMessage.filePath, 
+                            'READ'
+                        );
+                        
+                        if (!permissionResult.allowed) {
+                            if (permissionResult.requiresUserConfirmation) {
+                                const approved = await this.permissionsManager.requestUserPermission(
+                                    'read file',
+                                    sanitizedMessage.filePath,
+                                    permissionResult.details || 'Open file in editor'
+                                );
+                                
+                                if (!approved) {
+                                    this._webviewView?.webview.postMessage({
                                         command: 'error',
                                         message: `Permission denied: ${permissionResult.reason}`
                                     });
                                     return;
                                 }
+                            } else {
+                                this._webviewView?.webview.postMessage({
+                                    command: 'error',
+                                    message: `Permission denied: ${permissionResult.reason}`
+                                });
+                                return;
                             }
                         }
+                    }
 
-                        const fileUri = vscode.Uri.file(sanitizedMessage.filePath);
-                        try {
-                            const document = await vscode.workspace.openTextDocument(fileUri);
-                            await vscode.window.showTextDocument(document, { 
-                                preview: false,
-                                selection: sanitizedMessage.lineNumber ? new vscode.Range(sanitizedMessage.lineNumber - 1, 0, sanitizedMessage.lineNumber - 1, 0) : undefined
-                            });
-                        } catch (error) {
-                            console.error('Failed to open file:', error);
-                            vscode.window.showErrorMessage(`Failed to open file: ${sanitizedMessage.filePath}`);
-                        }
-                        return;
-                }
-            } catch (error) {
-                // Global error handling for all message processing
-                console.error('Error processing webview message:', error);
-                
-                // Log audit event only if adaptive security requires it
-                if (this.adaptiveSecurity.shouldLogAudit()) {
-                    this.securityManager.logAuditEvent({
-                        type: 'message_processing_error',
-                        timestamp: new Date(),
-                        approved: false,
-                        details: { 
-                            command: message.command, 
-                            error: error instanceof Error ? error.message : 'Unknown error' 
-                        }
-                    });
-                }
-                
-                webviewView.webview.postMessage({
-                    command: 'error',
-                    message: 'An error occurred while processing your request. Please try again.'
+                    const fileUri = vscode.Uri.file(sanitizedMessage.filePath);
+                    try {
+                        const document = await vscode.workspace.openTextDocument(fileUri);
+                        await vscode.window.showTextDocument(document, { 
+                            preview: false,
+                            selection: sanitizedMessage.lineNumber ? new vscode.Range(sanitizedMessage.lineNumber - 1, 0, sanitizedMessage.lineNumber - 1, 0) : undefined
+                        });
+                    } catch (error) {
+                        console.error('Failed to open file:', error);
+                        vscode.window.showErrorMessage(`Failed to open file: ${sanitizedMessage.filePath}`);
+                    }
+                    return;
+            }
+        } catch (error) {
+            // PRESERVE ALL EXISTING ERROR HANDLING
+            console.error('Error processing webview message:', error);
+            
+            if (this.adaptiveSecurity.shouldLogAudit()) {
+                this.securityManager.logAuditEvent({
+                    type: 'message_processing_error',
+                    timestamp: new Date(),
+                    approved: false,
+                    details: { 
+                        command: message.command, 
+                        error: error instanceof Error ? error.message : 'Unknown error' 
+                    }
                 });
             }
-        });
+            
+            this._webviewView?.webview.postMessage({
+                command: 'error',
+                message: 'An error occurred while processing your request. Please try again.'
+            });
+        }
     }
 
     private getHtmlForWebview(webview: vscode.Webview): string {
