@@ -256,12 +256,50 @@ const ChatInterface: React.FC = () => {
       <MessageList
         messages={messages}
         fileReferences={fileReferences}
-        onOpenFile={(filePath: string) => {
+        onOpenFile={(filePath: string, lineNumber?: number) => {
           // Send command to open file in editor
           webviewApi.sendMessage({
             command: 'openFile',
             filePath: filePath,
-            lineNumber: undefined
+            lineNumber: lineNumber
+          });
+        }}
+        onPreviewFile={async (filePath: string) => {
+          // Send command to preview file content
+          return new Promise((resolve, reject) => {
+            const requestId = Date.now().toString();
+            
+            // Store the promise resolvers
+            const cleanup = () => {
+              window.removeEventListener('message', messageHandler);
+            };
+            
+            const messageHandler = (event: MessageEvent) => {
+              const message = event.data;
+              if (message.command === 'filePreviewResponse' && message.requestId === requestId) {
+                cleanup();
+                if (message.error) {
+                  reject(new Error(message.error));
+                } else {
+                  resolve(message.content || '');
+                }
+              }
+            };
+            
+            window.addEventListener('message', messageHandler);
+            
+            // Send preview request
+            webviewApi.sendMessage({
+              command: 'previewFile',
+              filePath: filePath,
+              requestId: requestId
+            });
+            
+            // Timeout after 5 seconds
+            setTimeout(() => {
+              cleanup();
+              reject(new Error('File preview timeout'));
+            }, 5000);
           });
         }}
       />

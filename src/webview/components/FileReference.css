@@ -1,0 +1,311 @@
+/* FileReference.css - VS Code themed file reference component */
+
+.file-reference {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  line-height: 1.4;
+}
+
+.file-reference-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.file-reference-button:hover {
+  background-color: var(--vscode-button-hoverBackground);
+  border-color: var(--vscode-button-border);
+  color: var(--vscode-button-foreground);
+  text-decoration: underline;
+}
+
+.file-reference-button:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.file-reference-button:active {
+  background-color: var(--vscode-button-background);
+  transform: translateY(1px);
+}
+
+.file-icon {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.file-breadcrumbs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 300px;
+  overflow: hidden;
+}
+
+.breadcrumb-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.9em;
+}
+
+.breadcrumb-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.breadcrumb-separator {
+  color: var(--vscode-descriptionForeground);
+  opacity: 0.6;
+  font-size: 0.8em;
+  margin: 0 1px;
+}
+
+.file-name {
+  font-weight: 500;
+  color: var(--vscode-textLink-foreground);
+  white-space: nowrap;
+}
+
+.line-number {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.9em;
+  font-weight: normal;
+  opacity: 0.8;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: none;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.file-reference:hover .quick-actions {
+  display: flex;
+}
+
+.quick-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--vscode-descriptionForeground);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.quick-action-button:hover {
+  background-color: var(--vscode-toolbar-hoverBackground);
+  border-color: var(--vscode-button-border);
+  color: var(--vscode-foreground);
+}
+
+.quick-action-button:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+/* Preview Tooltip */
+.file-preview-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  margin-top: 8px;
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  min-width: 320px;
+  max-width: 500px;
+  max-height: 400px;
+  overflow: hidden;
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  animation: tooltip-appear 0.15s ease-out;
+}
+
+@keyframes tooltip-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--vscode-editorWidget-background);
+  border-bottom: 1px solid var(--vscode-widget-border);
+  color: var(--vscode-foreground);
+}
+
+.tooltip-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tooltip-path {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--vscode-textLink-foreground);
+}
+
+.tooltip-line {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.9em;
+  background: var(--vscode-badge-background);
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.tooltip-content {
+  padding: 12px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* Loading State */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Error State */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vscode-errorForeground);
+  background: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 3px;
+  padding: 8px;
+  font-size: 0.9em;
+}
+
+/* Preview Code */
+.preview-code {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--vscode-editor-foreground);
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+}
+
+.preview-code code {
+  background: transparent;
+  padding: 0;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .file-preview-tooltip {
+    left: -50%;
+    min-width: 280px;
+    max-width: 90vw;
+  }
+  
+  .breadcrumb-text {
+    max-width: 60px;
+  }
+  
+  .file-breadcrumbs {
+    max-width: 200px;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .file-reference-button {
+    border-color: var(--vscode-contrastBorder);
+  }
+  
+  .file-preview-tooltip {
+    border-color: var(--vscode-contrastBorder);
+    border-width: 2px;
+  }
+  
+  .tooltip-header {
+    border-bottom-color: var(--vscode-contrastBorder);
+    border-bottom-width: 2px;
+  }
+}
+
+/* Dark Theme Adjustments */
+.vscode-dark .file-preview-tooltip {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Light Theme Adjustments */
+.vscode-light .file-preview-tooltip {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Focus Visible for Better Accessibility */
+.file-reference-button:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.quick-action-button:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}

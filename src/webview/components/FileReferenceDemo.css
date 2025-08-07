@@ -1,0 +1,190 @@
+/* FileReferenceDemo.css - Demo styles for file reference system */
+
+.file-reference-demo {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  line-height: 1.6;
+}
+
+.file-reference-demo h2 {
+  color: var(--vscode-textLink-foreground);
+  margin-bottom: 16px;
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.file-reference-demo h3 {
+  color: var(--vscode-foreground);
+  margin: 24px 0 12px 0;
+  font-size: 1.2em;
+  font-weight: 500;
+  border-bottom: 1px solid var(--vscode-widget-border);
+  padding-bottom: 8px;
+}
+
+.demo-description {
+  background-color: var(--vscode-textCodeBlock-background);
+  padding: 16px;
+  border-radius: 6px;
+  border-left: 4px solid var(--vscode-textLink-foreground);
+  margin-bottom: 24px;
+  font-style: italic;
+}
+
+.demo-section {
+  margin-bottom: 32px;
+}
+
+.file-references-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.demo-file-item {
+  padding: 12px;
+  background-color: var(--vscode-editorWidget-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.demo-file-item:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  border-color: var(--vscode-focusBorder);
+}
+
+.demo-text-content {
+  background-color: var(--vscode-editor-background);
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-widget-border);
+  line-height: 1.8;
+}
+
+.demo-text-content p {
+  margin: 12px 0;
+}
+
+.features-list {
+  background-color: var(--vscode-editorWidget-background);
+  padding: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-widget-border);
+  list-style: none;
+  margin: 0;
+}
+
+.features-list li {
+  margin: 8px 0;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.features-list strong {
+  color: var(--vscode-textLink-foreground);
+}
+
+.cache-status {
+  background-color: var(--vscode-textCodeBlock-background);
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-widget-border);
+}
+
+.no-cache {
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+  margin: 0;
+}
+
+.cached-files p {
+  margin: 0 0 12px 0;
+  font-weight: 500;
+  color: var(--vscode-foreground);
+}
+
+.cached-files ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cached-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  color: var(--vscode-descriptionForeground);
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.9em;
+}
+
+.cache-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .file-reference-demo {
+    padding: 16px;
+  }
+  
+  .file-references-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .demo-description {
+    padding: 12px;
+  }
+  
+  .features-list {
+    padding: 16px;
+  }
+}
+
+/* Focus states for accessibility */
+.demo-file-item:focus-within {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+/* Animation for smooth transitions */
+.cached-file {
+  animation: fadeInScale 0.3s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .demo-file-item {
+    border-width: 2px;
+  }
+  
+  .demo-description {
+    border-left-width: 6px;
+  }
+  
+  .features-list,
+  .cache-status,
+  .demo-text-content {
+    border-width: 2px;
+  }
+}

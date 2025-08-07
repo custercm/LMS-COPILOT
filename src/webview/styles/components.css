@@ -201,3 +201,147 @@
   0% { transform: scale(0.95); }
   100% { transform: scale(1); }
 }
+
+/* File References Section Styles */
+.file-references-section {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 6px;
+  border-left: 3px solid var(--vscode-textLink-foreground);
+}
+
+.file-references-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+  font-weight: 500;
+  color: var(--vscode-foreground);
+}
+
+.file-references-icon {
+  font-size: 14px;
+  color: var(--vscode-textLink-foreground);
+}
+
+.file-references-title {
+  color: var(--vscode-foreground);
+}
+
+.file-references-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.file-reference-compact {
+  font-size: 0.9em;
+}
+
+.file-reference-compact .file-reference-button {
+  padding: 4px 8px;
+  font-size: 0.85em;
+}
+
+.file-reference-compact .quick-actions {
+  gap: 1px;
+}
+
+.file-reference-compact .quick-action-button {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
+/* File References Section Styles */
+.file-references-section {
+  margin-top: 12px;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid var(--vscode-textLink-foreground);
+}
+
+.file-references-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+  font-weight: 500;
+}
+
+.file-references-icon {
+  font-size: 14px;
+}
+
+.file-references-title {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.file-references-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-reference-compact {
+  font-size: 0.9em;
+}
+
+.file-reference-compact .file-reference-button {
+  padding: 2px 4px;
+}
+
+.file-reference-compact .quick-actions {
+  opacity: 0.8;
+}
+
+/* Media Actions Styles */
+.media-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.media-content {
+  margin: 8px 0;
+  padding: 12px;
+  background-color: var(--vscode-editorWidget-background);
+  border-radius: 6px;
+  border: 1px solid var(--vscode-widget-border);
+}
+
+.media-content h4 {
+  margin: 0 0 8px 0;
+  color: var(--vscode-foreground);
+  font-size: 1em;
+}
+
+.thumbnail {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.thumbnail:hover {
+  transform: scale(1.02);
+}
+
+.file-summary {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}

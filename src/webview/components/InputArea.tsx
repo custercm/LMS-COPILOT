@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../styles/InputArea.css';
 import { CommandHistoryManager } from '../utils/commandHistory';
+import { useOptimizedInput, useDebouncedCallback } from '../hooks/useDebounce';
 
 export interface CommandSuggestion {
   command: string;
@@ -24,7 +25,9 @@ const InputArea: React.FC<InputAreaProps> = ({
   ariaLabel = "Chat input area",
   enableDragAndDrop = true
 }) => {
-  const [inputValue, setInputValue] = useState('');
+  // Use optimized input with debouncing for better performance
+  const { value: inputValue, setValue: setInputValue, debouncedValue: debouncedInputValue, isDebouncing } = useOptimizedInput('', 150);
+  
   const [isFocused, setIsFocused] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<CommandSuggestion[]>([]);
@@ -37,6 +40,21 @@ const InputArea: React.FC<InputAreaProps> = ({
   
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Debounced command search for better performance
+  const debouncedCommandSearch = useDebouncedCallback((searchTerm: string) => {
+    if (searchTerm.startsWith('/')) {
+      const filtered = commandSuggestions.filter(cmd => 
+        cmd.command.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cmd.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+      setSelectedSuggestionIndex(0);
+    } else {
+      setShowSuggestions(false);
+    }
+  }, 200);
 
   // Enhanced command suggestions with descriptions and syntax
   const commandSuggestions: CommandSuggestion[] = [
@@ -111,21 +129,10 @@ const InputArea: React.FC<InputAreaProps> = ({
     setCommandHistory(commands);
   }, []);
 
-  // Handle input changes for command completion with fuzzy search
+  // Handle input changes for command completion with optimized debounced search
   useEffect(() => {
-    if (inputValue.startsWith('/')) {
-      const searchTerm = inputValue.toLowerCase();
-      const filtered = commandSuggestions.filter(cmd => 
-        cmd.command.toLowerCase().includes(searchTerm) ||
-        cmd.description.toLowerCase().includes(searchTerm)
-      );
-      setSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
-      setSelectedSuggestionIndex(0);
-    } else {
-      setShowSuggestions(false);
-    }
-  }, [inputValue]);
+    debouncedCommandSearch(debouncedInputValue);
+  }, [debouncedInputValue, debouncedCommandSearch]);
 
   // Handle keyboard navigation for suggestions
   useEffect(() => {

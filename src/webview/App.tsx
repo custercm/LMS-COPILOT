@@ -9,34 +9,119 @@ interface Message {
   timestamp: number;
 }
 
-function App() {
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import ChatInterface from './components/ChatInterface';
+import useWebviewApi from './hooks/useWebviewApi';
+import useMemoryManager from './hooks/useMemoryManager';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+}
+
+// Memoized App component for better performance
+const App = React.memo(() => {
   const webviewApi = useWebviewApi();
+  const memoryManager = useMemoryManager({
+    maxMessages: 1000,
+    maxCacheSize: 50,
+    cleanupInterval: 60000,
+    memoryThreshold: 100 * 1024 * 1024 // 100MB
+  });
 
-  // Add testing infrastructure to the app component
-  useEffect(() => {
+  // Performance monitoring state
+  const [performanceMetrics, setPerformanceMetrics] = useState({
+    renderTime: 0,
+    memoryUsage: 0,
+    messageCount: 0
+  });
+
+  // Optimized performance monitoring
+  const updatePerformanceMetrics = useCallback(() => {
+    const startTime = performance.now();
+    
+    // Measure component render time
+    requestAnimationFrame(() => {
+      const renderTime = performance.now() - startTime;
+      const memoryStats = memoryManager.getMemoryStats();
+      
+      setPerformanceMetrics({
+        renderTime,
+        memoryUsage: memoryStats.estimatedMemoryUsage,
+        messageCount: memoryStats.messagesCount
+      });
+    });
+  }, [memoryManager]);
+
+  // Memoized initialization with performance optimizations
+  const initializeApp = useCallback(async () => {
     if (typeof window !== 'undefined') {
-      // Setup test hooks in development environment
-      console.log('Testing infrastructure initialized');
-
-      // Mock performance tests
-      const mockPerformanceTests = async () => {
+      console.log('Performance-optimized app initialized');
+      
+      // Performance testing for Step 4 requirements
+      const performanceTests = async () => {
         try {
-          await webviewApi.sendMessage({ type: 'performance-test', payload: { message: 'mock benchmark' } });
+          const startTime = performance.now();
+          
+          // Test message handling performance
+          await webviewApi.sendMessage({ 
+            type: 'performance-test', 
+            payload: { message: 'performance benchmark', count: 1000 }
+          });
+          
+          const endTime = performance.now();
+          console.log(`Performance test completed in ${endTime - startTime}ms`);
+          
+          // Update metrics
+          updatePerformanceMetrics();
         } catch (error) {
           console.error('Performance test failed:', error);
         }
       };
 
-      mockPerformanceTests();
+      performanceTests();
     }
-  }, []);
+  }, [webviewApi, updatePerformanceMetrics]);
+
+  // Initialize app with performance monitoring
+  useEffect(() => {
+    initializeApp();
+    
+    // Set up periodic performance monitoring
+    const performanceInterval = setInterval(updatePerformanceMetrics, 30000); // Every 30 seconds
+    
+    return () => {
+      clearInterval(performanceInterval);
+    };
+  }, [initializeApp, updatePerformanceMetrics]);
 
   return (
     <div className="app">
       <ChatInterface />
+      
+      {/* Performance monitoring in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="performance-monitor" style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          background: 'rgba(0,0,0,0.8)',
+          color: 'white',
+          padding: '8px',
+          fontSize: '12px',
+          borderRadius: '4px',
+          zIndex: 1000
+        }}>
+          <div>Render: {performanceMetrics.renderTime.toFixed(2)}ms</div>
+          <div>Memory: {(performanceMetrics.memoryUsage / 1024 / 1024).toFixed(2)}MB</div>
+          <div>Messages: {performanceMetrics.messageCount}</div>
+        </div>
+      )}
     </div>
   );
-}
+});
 
 // Add component testing utilities
 export function runComponentTests(): Promise<{passed: number, failed: number}> {

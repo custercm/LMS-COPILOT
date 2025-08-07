@@ -59,6 +59,12 @@ export interface OpenFileCommand {
   lineNumber?: number;
 }
 
+export interface PreviewFileCommand {
+  command: 'previewFile';
+  filePath: string;
+  requestId: string;
+}
+
 export interface PerformanceTestCommand {
   type: 'performance-test';
   payload: any;
@@ -77,6 +83,7 @@ export type WebviewCommand =
   | EditInEditorCommand 
   | RegenerateResponseCommand
   | OpenFileCommand
+  | PreviewFileCommand
   | PerformanceTestCommand
   | CommandMessage;
 
@@ -110,9 +117,17 @@ export interface AddFileReferenceEvent {
   reference: FileReference;
 }
 
+export interface FilePreviewResponseEvent {
+  command: 'filePreviewResponse';
+  requestId: string;
+  content?: string;
+  error?: string;
+}
+
 export type ExtensionMessage = 
   | AddMessageEvent 
   | ShowTypingIndicatorEvent 
   | HideTypingIndicatorEvent 
   | HandleErrorEvent
-  | AddFileReferenceEvent;
+  | AddFileReferenceEvent
+  | FilePreviewResponseEvent;

@@ -1,0 +1,179 @@
+/* Performance optimization CSS styles */
+
+/* GPU acceleration for smooth scrolling */
+.message-list {
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: scroll-position;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.message-list.scrolling {
+  will-change: transform;
+}
+
+/* Optimize message items for virtualization */
+.message-item {
+  contain: layout style paint;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Code block loading optimization */
+.code-loading-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 4px;
+  font-family: var(--vscode-editor-font-family);
+  color: var(--vscode-foreground);
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.code-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}
+
+/* Pre-highlight state for code blocks before syntax highlighting loads */
+.pre-highlight {
+  background: var(--vscode-textBlockQuote-background);
+  border: 1px solid var(--vscode-textBlockQuote-border);
+  padding: 12px;
+  border-radius: 4px;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-x: auto;
+}
+
+/* Input area performance optimizations */
+.input-area {
+  contain: layout style;
+}
+
+.input-area.focused {
+  will-change: transform;
+}
+
+.message-input {
+  will-change: contents;
+}
+
+/* Command suggestions dropdown optimization */
+.command-suggestions {
+  contain: layout style paint;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.suggestion-item {
+  contain: layout style;
+  will-change: background-color;
+  transition: background-color 0.15s ease-out;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+/* Performance monitor styles */
+.performance-monitor {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* File reference hover optimization */
+.file-reference {
+  contain: layout style;
+}
+
+.file-preview-tooltip {
+  contain: layout style paint;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  will-change: opacity, transform;
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* Memory optimization for large lists */
+.virtualized-container {
+  contain: strict;
+  overflow: hidden;
+}
+
+/* Reduce layout thrashing during animations */
+.animated-element {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Optimize text rendering */
+.optimized-text {
+  text-rendering: optimizeSpeed;
+  font-smooth: never;
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+/* Media queries for performance on different screen sizes */
+@media (max-width: 768px) {
+  .performance-monitor {
+    display: none;
+  }
+  
+  .message-list {
+    will-change: auto;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .suggestion-item {
+    transition: none;
+  }
+  
+  .file-preview-tooltip {
+    transition: none;
+  }
+}
+
+/* High contrast mode optimizations */
+@media (prefers-contrast: high) {
+  .code-loading-placeholder {
+    border-width: 2px;
+  }
+}
+
+/* Print styles - optimize for performance */
+@media print {
+  .performance-monitor,
+  .command-suggestions,
+  .file-preview-tooltip {
+    display: none !important;
+  }
+}

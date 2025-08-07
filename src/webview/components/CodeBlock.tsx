@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import './CodeBlock.css';
-import Prism from 'prismjs';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/themes/prism.css';
+
+// Lazy load PrismHighlighter for better performance
+const PrismHighlighter = lazy(() => import('./PrismHighlighter'));
 
 interface CodeBlockProps {
   code: string;
@@ -12,6 +10,14 @@ interface CodeBlockProps {
   onApplyChange?: (changeId: string) => void;
   changeId?: string;
 }
+
+// Loading placeholder component
+const CodeLoadingPlaceholder: React.FC = () => (
+  <div className="code-loading-placeholder">
+    <div className="loading-spinner"></div>
+    <span>Loading syntax highlighting...</span>
+  </div>
+);
 
 const CodeBlock: React.FC<CodeBlockProps> = ({
   code,
@@ -21,6 +27,48 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCopiedToast, setShowCopiedToast] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+  const [shouldHighlight, setShouldHighlight] = useState(false);
+  const codeRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Intersection Observer for lazy loading syntax highlighting
+  useEffect(() => {
+    if (!codeRef.current) return;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isInView) {
+            setIsInView(true);
+            // Delay syntax highlighting to avoid blocking the main thread
+            setTimeout(() => setShouldHighlight(true), 100);
+          }
+        });
+      },
+      {
+        rootMargin: '50px',
+        threshold: 0.1
+      }
+    );
+
+    observerRef.current.observe(codeRef.current);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [isInView]);
+
+  // Cleanup observer on unmount
+  useEffect(() => {
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
 
   // Toggle expand/collapse state
   const toggleExpand = () => {
@@ -53,16 +101,22 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   };
 
   return (
-    <div className="code-block">
+    <div ref={codeRef} className="code-block">
       {showCopiedToast && (
         <div className="toast-notification">
           Copied to clipboard!
         </div>
       )}
       
-      <pre className={`language-${language}`}>
-        <code className={`language-${language}`}>{code}</code>
-      </pre>
+      {shouldHighlight && isInView ? (
+        <Suspense fallback={<CodeLoadingPlaceholder />}>
+          <PrismHighlighter code={code} language={language} />
+        </Suspense>
+      ) : (
+        <pre className={`language-${language} pre-highlight`}>
+          <code className={`language-${language}`}>{code}</code>
+        </pre>
+      )}
       
       <div className="code-actions">
         <button 
