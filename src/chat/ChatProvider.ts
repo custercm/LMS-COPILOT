@@ -3,6 +3,7 @@ import { LMStudioClient } from '../lmstudio/LMStudioClient';
 import { SecurityManager, AuditEntry, ValidationResult } from '../security/SecurityManager';
 import { PermissionsManager, PermissionResult } from '../security/PermissionsManager';
 import { RateLimiter, RateLimitResult } from '../security/RateLimiter';
+import { AdaptiveSecurityManager, SecurityConfigManager, SecurityLevel } from '../security/AdaptiveSecurity';
 
 export class ChatProvider implements vscode.WebviewViewProvider {
     private _webviewView: vscode.WebviewView | undefined;
@@ -10,6 +11,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     private securityManager: SecurityManager;
     private permissionsManager: PermissionsManager;
     private rateLimiter: RateLimiter;
+    private adaptiveSecurity: AdaptiveSecurityManager;
     
     // Rate limiting properties (deprecated - using RateLimiter instead)
     private requestCount: number = 0;
@@ -27,6 +29,17 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         this.securityManager = SecurityManager.getInstance();
         this.permissionsManager = PermissionsManager.getInstance();
         this.rateLimiter = RateLimiter.getInstance();
+        this.adaptiveSecurity = new AdaptiveSecurityManager();
+        
+        // Update security from VS Code settings
+        this.updateSecurityFromSettings();
+        
+        // Listen for settings changes
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('lmsCopilot.securityLevel')) {
+                this.updateSecurityFromSettings();
+            }
+        });
     }
 
     public async resolveWebviewView(
@@ -817,5 +830,20 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     private processHtmlContent(htmlContent: string): void {
       // Process HTML content
       console.log('Processing HTML content:', htmlContent.length, 'characters');
+    }
+
+    private updateSecurityFromSettings(): void {
+        const config = vscode.workspace.getConfiguration('lmsCopilot');
+        const securityLevel = config.get<string>('securityLevel', 'minimal') as SecurityLevel;
+        const allowDangerous = config.get<boolean>('allowDangerousCommands', false);
+        
+        const securityConfig = SecurityConfigManager.getInstance();
+        securityConfig.setSecurityLevel(securityLevel);
+        
+        if (allowDangerous) {
+            securityConfig.updateConfig({ allowDangerousCommands: true });
+        }
+        
+        console.log(`LMS Copilot security level: ${securityLevel}`);
     }
   }
