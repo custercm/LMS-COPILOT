@@ -3,6 +3,8 @@ import { AgentManager } from './agent/AgentManager';
 import { LMStudioClient } from './lmstudio/LMStudioClient';
 import { ConversationHistory } from './agent/ConversationHistory';
 import { ChatProvider } from './chat/ChatProvider';
+import { ChatPanel } from './chat/ChatPanel';
+import { MessageHandler } from './chat/MessageHandler';
 // Security system is implemented in ./security/ and integrated into ChatProvider
 
 export function activate(context: vscode.ExtensionContext) {
@@ -10,6 +12,12 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Create LM Studio client
     const lmStudioClient = new LMStudioClient();
+    
+    // Create agent manager
+    const agentManager = new AgentManager(lmStudioClient);
+    
+    // Create message handler
+    const messageHandler = new MessageHandler(agentManager);
     
     // Create and register ChatProvider for webview
     const chatProvider = new ChatProvider(lmStudioClient, context.extensionUri);
@@ -23,12 +31,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
     
-    // Create agent manager with conversation history
-    const agentManager = new AgentManager(lmStudioClient);
-    
     // Register commands
-    const disposable = vscode.commands.registerCommand('lms-copilot.startChat', async () => {
-        // Show the chat webview panel
+    const startChatDisposable = vscode.commands.registerCommand('lms-copilot.startChat', async () => {
+        // Show the chat webview panel using ChatPanel
         const panel = vscode.window.createWebviewPanel(
             'copilotChat',
             'LMS Copilot Chat',
@@ -39,81 +44,55 @@ export function activate(context: vscode.ExtensionContext) {
             }
         );
         
-        // Load webview content (this would normally be from a HTML file)
-        panel.webview.html = getWebviewContent();
+        // Create ChatPanel instance for this panel
+        const chatPanel = new ChatPanel(panel.webview);
         
-        // Handle messages from webview
+        // Set up message handler callback
+        chatPanel.setMessageHandler(async (text: string) => {
+            try {
+                // Process with message handler
+                await messageHandler.handleMessage(text, 'panel');
+            } catch (error) {
+                chatPanel.addMessage('assistant', `Error: ${(error as Error).message}`);
+            }
+        });
+        
+        chatPanel.init();
+        
+        // Wire the message handler to use the chat panel
+        messageHandler.setChatPanel(chatPanel);
+        
+        // Handle other non-chat messages from webview (if any)
         panel.webview.onDidReceiveMessage(async message => {
             switch (message.command) {
-                case 'sendMessage':
-                    // Add to conversation history before processing
-                    agentManager.getConversationHistory().addMessage('user', message.text);
-                    
-                    // Process with AI agent
-                    const response = await agentManager.processMessage(message.text);
-                    
-                    // Add AI response to history
-                    agentManager.getConversationHistory().addMessage('assistant', response);
-                    
-                    // Send back to webview (this would be a postMessage call)
-                    panel.webview.postMessage({
-                        command: 'receiveMessage',
-                        text: response
-                    });
-                    return;
-                
                 case 'analyzeFile':
                     try {
                         const result = await agentManager.analyzeFileContent(message.filePath);
-                        panel.webview.postMessage({
-                            command: 'fileAnalysisResult',
-                            content: result,
-                            filePath: message.filePath
-                        });
+                        chatPanel.addMessage('assistant', `File Analysis for ${message.filePath}:\n${result}`);
                     } catch (error) {
-                        panel.webview.postMessage({
-                            command: 'fileAnalysisError',
-                            error: (error as Error).message
-                        });
+                        chatPanel.addMessage('assistant', `Error analyzing file: ${(error as Error).message}`);
                     }
                     return;
                 
                 case 'executeCommand':
                     try {
                         const result = await agentManager.executeTerminalCommand(message.commandText);
-                        panel.webview.postMessage({
-                            command: 'commandResult',
-                            output: result,
-                            commandText: message.commandText
-                        });
+                        chatPanel.addMessage('assistant', `Command Output:\n${result}`);
                     } catch (error) {
-                        panel.webview.postMessage({
-                            command: 'commandError',
-                            error: (error as Error).message
-                        });
+                        chatPanel.addMessage('assistant', `Command Error: ${(error as Error).message}`);
                     }
                     return;
             }
         });
     });
 
-    // Add disposables to subscriptions
-    context.subscriptions.push(disposable, chatProviderDisposable);
-}
+    // Register toggle panel command
+    const togglePanelDisposable = vscode.commands.registerCommand('lms-copilot.togglePanel', () => {
+        vscode.commands.executeCommand('workbench.view.extension.lmsCopilotContainer');
+    });
 
-function getWebviewContent() {
-    // This would normally load HTML content, but for demonstration:
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>LMS Copilot</title>
-</head>
-<body>
-    <div id="root"></div>
-</body>
-</html>`;
+    // Add disposables to subscriptions
+    context.subscriptions.push(startChatDisposable, togglePanelDisposable, chatProviderDisposable);
 }
 
 // Add mock VS Code API for testing

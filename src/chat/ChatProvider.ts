@@ -4,6 +4,8 @@ import { SecurityManager, AuditEntry, ValidationResult } from '../security/Secur
 import { PermissionsManager, PermissionResult } from '../security/PermissionsManager';
 import { RateLimiter, RateLimitResult } from '../security/RateLimiter';
 import { AdaptiveSecurityManager, SecurityConfigManager, SecurityLevel, AdaptiveValidationResult } from '../security/AdaptiveSecurity';
+import { MessageHandler } from './MessageHandler';
+import { AgentManager } from '../agent/AgentManager';
 
 export class ChatProvider implements vscode.WebviewViewProvider {
     private _webviewView: vscode.WebviewView | undefined;
@@ -13,10 +15,19 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     private rateLimiter: RateLimiter;
     private adaptiveSecurity: AdaptiveSecurityManager;
     private extensionUri: vscode.Uri;
+    private messageHandler: MessageHandler;
+    private agentManager: AgentManager;
 
     constructor(client: LMStudioClient, extensionUri: vscode.Uri) { 
         this.client = client;
         this.extensionUri = extensionUri;
+        
+        // Initialize agent manager
+        this.agentManager = new AgentManager(client);
+        
+        // Initialize message handler
+        this.messageHandler = new MessageHandler(this.agentManager);
+        this.messageHandler.setChatProvider(this);
         
         // Initialize security components
         this.securityManager = SecurityManager.getInstance();
@@ -226,7 +237,7 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         if (!this._webviewView) return;
 
         try {
-            // Sanitize user input before sending to LM Studio
+            // Sanitize user input before processing
             const sanitizedMessage = this.adaptiveSecurity.sanitizeInput(message);
             
             if (!this._validateMessage(sanitizedMessage)) {
@@ -244,8 +255,8 @@ export class ChatProvider implements vscode.WebviewViewProvider {
             // Show typing indicator while waiting for response
             this.appendTypingIndicator();
             
-            // Send message to LMStudio backend
-            const response = await this.client.sendMessage(sanitizedMessage);
+            // Use MessageHandler to process the message
+            const response = await this.messageHandler.handleMessage(sanitizedMessage, 'provider');
             
             // Remove typing indicator after response is complete
             this.removeTypingIndicator();
