@@ -22,35 +22,44 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     private messageHandler: MessageHandler;
     private agentManager: AgentManager;
 
-    constructor(client: LMStudioClient, extensionUri: vscode.Uri) { 
+    constructor(
+        client: LMStudioClient, 
+        extensionUri: vscode.Uri,
+        messageHandler?: MessageHandler,
+        agentManager?: AgentManager
+    ) { 
         this.client = client;
         this.extensionUri = extensionUri;
         
         // Initialize LM Studio components
         this.modelManager = new ModelManager();
         
-        // Initialize agent manager
-        this.agentManager = new AgentManager(client);
+        // Use provided dependencies OR create new ones (backward compatibility)
+        this.agentManager = agentManager || new AgentManager(client);
+        this.messageHandler = messageHandler || new MessageHandler(this.agentManager);
         
-        // Initialize message handler
-        this.messageHandler = new MessageHandler(this.agentManager);
-        this.messageHandler.setChatProvider(this);
-        
-        // Initialize security components
+        // Initialize security components (PRESERVE ALL EXISTING LOGIC)
         this.securityManager = SecurityManager.getInstance();
         this.permissionsManager = PermissionsManager.getInstance();
         this.rateLimiter = RateLimiter.getInstance();
         this.adaptiveSecurity = new AdaptiveSecurityManager();
         
-        // Update security from VS Code settings
+        // Update security from VS Code settings (PRESERVE)
         this.updateSecurityFromSettings();
         
-        // Listen for settings changes
+        // Listen for settings changes (PRESERVE)
         vscode.workspace.onDidChangeConfiguration(e => {
             if (e.affectsConfiguration('lmsCopilot.securityLevel')) {
                 this.updateSecurityFromSettings();
             }
         });
+    }
+
+    // ADD new method for post-construction wiring
+    public wireMessageHandler(): void {
+        if (this.messageHandler) {
+            this.messageHandler.setChatProvider(this);
+        }
     }
 
     public async resolveWebviewView(

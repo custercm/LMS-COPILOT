@@ -15,10 +15,25 @@ import PanelManager from './ui/PanelManager';
 export function activate(context: vscode.ExtensionContext) {
     console.log('LMS Copilot extension is now active!');
     
-    // Create LM Studio client
+    // PHASE 1: Create Core Services (No Dependencies)
     const lmStudioClient = new LMStudioClient();
     
-    // Create panel manager for UI management
+    // PHASE 2: Create Services with Dependencies
+    const agentManager = new AgentManager(lmStudioClient);
+    const messageHandler = new MessageHandler(agentManager);
+    
+    // PHASE 3: Create UI Components with Dependency Injection
+    const chatProvider = new ChatProvider(
+        lmStudioClient, 
+        context.extensionUri,
+        messageHandler,
+        agentManager
+    );
+    
+    // PHASE 4: Wire Bidirectional References (After All Objects Exist)
+    chatProvider.wireMessageHandler();
+    
+    // PHASE 5: Create Panel Manager and Wire Dependencies
     const panelManager = new PanelManager(
         {
             title: 'LMS Copilot Chat',
@@ -27,18 +42,10 @@ export function activate(context: vscode.ExtensionContext) {
         lmStudioClient
     );
     
-    // Create agent manager
-    const agentManager = new AgentManager(lmStudioClient);
-    
-    // Create message handler
-    const messageHandler = new MessageHandler(agentManager);
-    
-    // Wire the panel manager with dependencies
     panelManager.setAgentManager(agentManager);
     panelManager.setMessageHandler(messageHandler);
     
-    // Create and register ChatProvider for webview
-    const chatProvider = new ChatProvider(lmStudioClient, context.extensionUri);
+    // PHASE 6: Register VS Code Providers (PRESERVE ALL EXISTING LOGIC)
     const chatProviderDisposable = vscode.window.registerWebviewViewProvider(
         'lmsCopilotChat',
         chatProvider,
@@ -49,13 +56,14 @@ export function activate(context: vscode.ExtensionContext) {
         }
     );
 
-    // Create and register CompletionProvider for inline code completion
+    // PRESERVE ALL EXISTING COMPLETION PROVIDER LOGIC
     const completionProvider = new CompletionProvider(lmStudioClient);
     const completionProviderDisposable = vscode.languages.registerInlineCompletionItemProvider(
         { scheme: 'file' }, // Apply to all file schemes
         completionProvider
     );
     
+    // PRESERVE ALL EXISTING COMMAND REGISTRATIONS
     // Register commands
     const startChatDisposable = vscode.commands.registerCommand('lms-copilot.startChat', async () => {
         // Use PanelManager to create and manage the chat panel
@@ -129,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    // Add disposables to subscriptions
+    // PRESERVE ALL EXISTING DISPOSABLES
     context.subscriptions.push(
         startChatDisposable, 
         togglePanelDisposable, 
