@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { LMStudioClient, LMStudioConfig } from '../../../lmstudio/LMStudioClient';
+import { LMStudioClient, LMStudioConfig } from '../../../src/lmstudio/LMStudioClient';
 
 // Mock axios
 jest.mock('axios');

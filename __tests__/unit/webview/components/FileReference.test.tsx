@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import FileReference from '../../webview/components/FileReference';
-import { FileReference as FileReferenceType } from '../../webview/types/api';
+import FileReference from '../../../../src/webview/components/FileReference';
+import { FileReference as FileReferenceType } from '../../../../src/webview/types/api';
 
 // Mock CSS imports
-jest.mock('../../webview/components/FileReference.css', () => ({}));
+jest.mock('../../../../src/webview/components/FileReference.css', () => ({}));
 
 describe('FileReference Component', () => {
   const mockOnOpenFile = jest.fn();

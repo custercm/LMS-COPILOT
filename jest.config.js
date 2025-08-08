@@ -5,7 +5,7 @@ module.exports = {
   // Handle CSS and asset imports
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/__tests__/mocks/fileMock.js'
+    '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/__tests__/mocks/fileMock.js'
   },
   
   // Transform TypeScript and JavaScript files
@@ -17,10 +17,10 @@ module.exports = {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
   
-  // Only test source files, not compiled files
+  // Only test files in the new __tests__ directory
   testMatch: [
-    '**/src/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
-    '**/src/**/*.(test|spec).(ts|tsx|js)'
+    '**/__tests__/**/*.(test|spec).(ts|tsx|js)',
+    '**/*.(test|spec).(ts|tsx|js)'
   ],
   
   // Ignore compiled files, node_modules, TypeScript declaration files, and mock files
@@ -28,12 +28,12 @@ module.exports = {
     '/node_modules/',
     '/dist/',
     '\\.d\\.ts$',
-    'src/__tests__/mocks/',
-    'src/__tests__/setup.ts'
+    '__tests__/mocks/',
+    '__tests__/setup.ts'
   ],
   
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
   
   // Coverage configuration
   collectCoverageFrom: [

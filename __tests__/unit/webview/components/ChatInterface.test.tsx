@@ -1,17 +1,17 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ChatInterface from '../../../webview/components/ChatInterface';
+import ChatInterface from '../../../../src/webview/components/ChatInterface';
 
 // Mock the hooks and components
-jest.mock('../../../webview/hooks/useWebviewApi', () => {
+jest.mock('../../../../src/webview/hooks/useWebviewApi', () => {
   return jest.fn(() => ({
     sendMessage: jest.fn(),
     sendCommand: jest.fn(),
   }));
 });
 
-jest.mock('../../../webview/components/MessageList', () => {
+jest.mock('../../../../src/webview/components/MessageList', () => {
   return function MockMessageList({ messages, onOpenFile }: any) {
     return (
       <div data-testid="message-list">
@@ -26,7 +26,7 @@ jest.mock('../../../webview/components/MessageList', () => {
   };
 });
 
-jest.mock('../../../webview/components/InputArea', () => {
+jest.mock('../../../../src/webview/components/InputArea', () => {
   return function MockInputArea({ onSendMessage }: any) {
     // Use a simpler approach that doesn't involve state updates during test execution
     return (
@@ -47,7 +47,7 @@ jest.mock('../../../webview/components/InputArea', () => {
   };
 });
 
-jest.mock('../../../webview/components/StreamingIndicator', () => {
+jest.mock('../../../../src/webview/components/StreamingIndicator', () => {
   return function MockStreamingIndicator({ isStreaming, progress }: any) {
     return (
       <div data-testid="streaming-indicator">
@@ -57,7 +57,7 @@ jest.mock('../../../webview/components/StreamingIndicator', () => {
   };
 });
 
-const useWebviewApi = require('../../../webview/hooks/useWebviewApi');
+const useWebviewApi = require('../../../../src/webview/hooks/useWebviewApi');
 
 describe('ChatInterface', () => {
   let mockWebviewApi: any;

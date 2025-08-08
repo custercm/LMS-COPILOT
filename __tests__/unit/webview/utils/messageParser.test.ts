@@ -5,7 +5,7 @@ import {
   extractFilePaths,
   createTestMarkdownContent,
   validateCodeBlockExtraction
-} from '../../../webview/utils/messageParser';
+} from '../../../../src/webview/utils/messageParser';
 
 describe('messageParser', () => {
   describe('parseMessageContent', () => {

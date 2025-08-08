@@ -3,7 +3,7 @@ import {
   hasFileReferences, 
   getFileCategory, 
   formatDisplayPath 
-} from '../../webview/utils/fileReferenceParser';
+} from '../../../../src/webview/utils/fileReferenceParser';
 
 describe('fileReferenceParser', () => {
   describe('extractFileReferences', () => {

@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import MessageItem from '../../../webview/components/MessageItem';
+import MessageItem from '../../../../src/webview/components/MessageItem';
 
 // Mock the CSS import
-jest.mock('../../../webview/components/MessageItem.css', () => ({}));
+jest.mock('../../../../src/webview/components/MessageItem.css', () => ({}));
 
 // Mock any VS Code API calls
 jest.mock('vscode', () => ({}), { virtual: true });

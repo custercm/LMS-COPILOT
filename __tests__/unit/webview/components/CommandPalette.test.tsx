@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CommandPalette, { Command } from '../../../webview/components/CommandPalette';
+import CommandPalette, { Command } from '../../../../src/webview/components/CommandPalette';
 
 // Mock CSS imports
-jest.mock('../../../webview/components/CommandPalette.css', () => ({}));
+jest.mock('../../../../src/webview/components/CommandPalette.css', () => ({}));
 
 describe('CommandPalette Component', () => {
   const mockOnCommandSelect = jest.fn();
