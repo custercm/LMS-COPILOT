@@ -20,6 +20,11 @@ describe('Webview Communication Integration', () => {
   beforeEach(() => {
     webviewApi = (global as any).acquireVsCodeApi();
     jest.clearAllMocks();
+    
+    // Reset mock implementations to default behavior
+    mockWebviewApi.postMessage.mockImplementation(() => {});
+    mockWebviewApi.getState.mockImplementation(() => ({}));
+    mockWebviewApi.setState.mockImplementation(() => {});
   });
 
   describe('Message Sending', () => {

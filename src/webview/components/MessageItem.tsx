@@ -28,7 +28,7 @@ function MessageItem({
     const fileReferences = extractFileReferences(content);
     
     if (fileReferences.length === 0) {
-      return parseMessageContent(content);
+      return <span dangerouslySetInnerHTML={{ __html: parseMessageContent(content) }} />;
     }
 
     // Split content by file references and render with FileReference components

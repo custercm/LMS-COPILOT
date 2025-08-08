@@ -9,7 +9,7 @@ const FILE_PATH_PATTERNS = [
   /(?:^|[\s\(\[\{])\.{0,2}\/(?:[a-zA-Z0-9_\-\.]+\/)*[a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+(?:\:[0-9]+(?:\:[0-9]+)?)?(?=[\s\)\]\}\.\,\;]|$)/gm,
   
   // Common workspace patterns (src/, dist/, node_modules/, etc.)
-  /(?:^|[\s\(\[\{])(?:src|dist|lib|build|public|assets|components|utils|hooks|types|styles|tests?|__tests__|spec|\.vscode|node_modules)\/(?:[a-zA-Z0-9_\-\.]+\/)*[a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+(?:\:[0-9]+(?:\:[0-9]+)?)?(?=[\s\)\]\}\.\,\;]|$)/gm,
+  /(?:^|[\s\(\[\{])(?:src|dist|lib|build|public|assets|components|utils|hooks|types|styles|tests?|__tests__|spec|\.vscode|node_modules|config|configs|scripts)\/(?:[a-zA-Z0-9_\-\.]+\/)*[a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+(?:\:[0-9]+(?:\:[0-9]+)?)?(?=[\s\)\]\}\.\,\;]|$)/gm,
   
   // Markdown-style file links [filename](path)
   /\[([^\]]+)\]\(([^)]+\.[a-zA-Z0-9]+(?:\:[0-9]+(?:\:[0-9]+)?)?)\)/gm
@@ -110,8 +110,11 @@ function cleanFilePath(path: string): string {
  * Check if the path is a valid file path
  */
 function isValidFilePath(path: string): boolean {
+  // First remove line/column info to get just the file path
+  const { path: cleanPath } = parseLineAndColumn(path);
+  
   // Must have an extension or be a known file without extension
-  const lastPart = path.split('/').pop() || '';
+  const lastPart = cleanPath.split('/').pop() || '';
   const hasExtension = lastPart.includes('.') && !lastPart.endsWith('.');
   
   if (hasExtension) {
@@ -132,7 +135,7 @@ function isValidFilePath(path: string): boolean {
  * Parse line and column numbers from file path
  */
 function parseLineAndColumn(filePath: string): { path: string; line?: number; column?: number } {
-  const lineColumnMatch = filePath.match(/^(.+):(\d+)(?::(\d+))?$/);
+  const lineColumnMatch = filePath.match(/^(.+?):(\d+)(?::(\d+))?$/);
   
   if (lineColumnMatch) {
     return {

@@ -219,13 +219,18 @@ export class LMStudioClient {
   }
 
   async listModels(): Promise<string[]> {
-    return this.withRetry(async () => {
-      const response = await axios.get(`${this.config.endpoint}/v1/models`, {
-        timeout: this.config.timeout,
-        headers: this.config.apiKey ? { 'Authorization': `Bearer ${this.config.apiKey}` } : {}
+    try {
+      return await this.withRetry(async () => {
+        const response = await axios.get(`${this.config.endpoint}/v1/models`, {
+          timeout: this.config.timeout,
+          headers: this.config.apiKey ? { 'Authorization': `Bearer ${this.config.apiKey}` } : {}
+        });
+        return response.data.data.map((model: any) => model.id);
       });
-      return response.data.data.map((model: any) => model.id);
-    });
+    } catch (error) {
+      // Return empty array on error as expected by tests
+      return [];
+    }
   }
 
   // Health check method

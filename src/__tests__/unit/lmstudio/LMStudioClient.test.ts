@@ -60,7 +60,8 @@ describe('LMStudioClient', () => {
           messages: [{ role: 'user', content: 'Test message' }],
           max_tokens: 2048,
           temperature: 0.7
-        }
+        },
+        { headers: {}, timeout: 30000 }
       );
       expect(result).toBe('Test response');
     });
@@ -79,8 +80,7 @@ describe('LMStudioClient', () => {
     });
 
     it('should handle API errors', async () => {
-      const error = new Error('Network error');
-      mockedAxios.post.mockRejectedValueOnce(error);
+      mockedAxios.post.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(client.sendMessage('Test message')).rejects.toThrow('Network error');
     });
@@ -101,13 +101,12 @@ describe('LMStudioClient', () => {
 
       const result = await client.listModels();
 
-      expect(mockedAxios.get).toHaveBeenCalledWith('http://localhost:1234/v1/models');
+      expect(mockedAxios.get).toHaveBeenCalledWith('http://localhost:1234/v1/models', { headers: {}, timeout: 30000 });
       expect(result).toEqual(['model1', 'model2']);
     });
 
     it('should return empty array on error', async () => {
-      const error = new Error('Network error');
-      mockedAxios.get.mockRejectedValueOnce(error);
+      mockedAxios.get.mockRejectedValueOnce(new Error('Network error'));
 
       const result = await client.listModels();
       expect(result).toEqual([]);
@@ -141,7 +140,8 @@ describe('LMStudioClient', () => {
               content: expect.stringContaining('Analyze this project structure')
             })
           ])
-        })
+        }),
+        { headers: {}, timeout: 30000 }
       );
     });
 
@@ -180,8 +180,7 @@ describe('LMStudioClient', () => {
     });
 
     it('should handle agent task errors', async () => {
-      const error = new Error('Task execution failed');
-      mockedAxios.post.mockRejectedValueOnce(error);
+      mockedAxios.post.mockRejectedValueOnce(new Error('Task execution failed'));
 
       await expect(client.executeAgentTask('Invalid task')).rejects.toThrow('Agent task failed: Task execution failed');
     });
@@ -232,8 +231,7 @@ describe('LMStudioClient', () => {
     });
 
     it('should handle change application errors', async () => {
-      const error = new Error('Change application failed');
-      mockedAxios.post.mockRejectedValueOnce(error);
+      mockedAxios.post.mockRejectedValueOnce(new Error('Change application failed'));
 
       await expect(client.applyChange('123')).rejects.toThrow('Change application failed: Change application failed');
     });

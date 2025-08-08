@@ -49,8 +49,8 @@ describe('CommandPalette Component', () => {
       });
 
       expect(screen.getByPlaceholderText('Type a command or search...')).toBeInTheDocument();
-      expect(screen.getByText('New Chat')).toBeInTheDocument();
-      expect(screen.getByText('Clear History')).toBeInTheDocument();
+      expect(screen.getByText('Help')).toBeInTheDocument();
+      expect(screen.getByText('Analyze Code')).toBeInTheDocument();
     });
 
     it('does not render when not visible', async () => {

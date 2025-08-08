@@ -12,16 +12,14 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       useESM: false,
-      tsconfig: {
-        jsx: 'react-jsx'
-      }
+      tsconfig: 'tsconfig.test.json'
     }],
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
   
   // Only test source files, not compiled files
   testMatch: [
-    '**/src/**/__tests__/**/*.(ts|tsx|js)',
+    '**/src/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
     '**/src/**/*.(test|spec).(ts|tsx|js)'
   ],
   
@@ -30,7 +28,8 @@ module.exports = {
     '/node_modules/',
     '/dist/',
     '\\.d\\.ts$',
-    'src/__tests__/mocks/'
+    'src/__tests__/mocks/',
+    'src/__tests__/setup.ts'
   ],
   
   // Setup files
