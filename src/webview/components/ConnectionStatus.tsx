@@ -1,7 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import '../styles/ConnectionStatus.css';
+import React, { useState, useEffect, useCallback } from "react";
+import "../styles/ConnectionStatus.css";
 
-export type ConnectionState = 'connected' | 'disconnected' | 'connecting' | 'reconnecting';
+export type ConnectionState =
+  | "connected"
+  | "disconnected"
+  | "connecting"
+  | "reconnecting";
 
 interface ConnectionStatusProps {
   className?: string;
@@ -10,7 +14,8 @@ interface ConnectionStatusProps {
 }
 
 export function useConnectionStatus() {
-  const [connectionState, setConnectionState] = useState<ConnectionState>('connected');
+  const [connectionState, setConnectionState] =
+    useState<ConnectionState>("connected");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [lastConnected, setLastConnected] = useState<Date | null>(new Date());
   const [retryCount, setRetryCount] = useState(0);
@@ -19,38 +24,38 @@ export function useConnectionStatus() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      setConnectionState('connected');
+      setConnectionState("connected");
       setLastConnected(new Date());
       setRetryCount(0);
     };
 
     const handleOffline = () => {
       setIsOnline(false);
-      setConnectionState('disconnected');
+      setConnectionState("disconnected");
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
   // Connection test function
   const testConnection = useCallback(async (): Promise<boolean> => {
     try {
-      setConnectionState('connecting');
-      
+      setConnectionState("connecting");
+
       // Test connection to LM Studio endpoint
-      const response = await fetch('http://localhost:1234/v1/models', {
-        method: 'GET',
-        timeout: 5000
+      const response = await fetch("http://localhost:1234/v1/models", {
+        method: "GET",
+        timeout: 5000,
       } as any);
-      
+
       if (response.ok) {
-        setConnectionState('connected');
+        setConnectionState("connected");
         setLastConnected(new Date());
         setRetryCount(0);
         return true;
@@ -58,8 +63,8 @@ export function useConnectionStatus() {
         throw new Error(`HTTP ${response.status}`);
       }
     } catch (error) {
-      console.error('Connection test failed:', error);
-      setConnectionState('disconnected');
+      console.error("Connection test failed:", error);
+      setConnectionState("disconnected");
       return false;
     }
   }, []);
@@ -70,18 +75,18 @@ export function useConnectionStatus() {
     const baseDelay = 1000; // 1 second
 
     if (retryCount >= maxRetries) {
-      console.warn('Max retry attempts reached');
+      console.warn("Max retry attempts reached");
       return false;
     }
 
-    setConnectionState('reconnecting');
-    setRetryCount(prev => prev + 1);
+    setConnectionState("reconnecting");
+    setRetryCount((prev) => prev + 1);
 
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s
     const delay = baseDelay * Math.pow(2, retryCount);
-    
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
     return await testConnection();
   }, [retryCount, testConnection]);
 
@@ -91,17 +96,21 @@ export function useConnectionStatus() {
     lastConnected,
     retryCount,
     testConnection,
-    retryConnection
+    retryConnection,
   };
 }
 
-function ConnectionStatus({ className, onRetry, showDetails = false }: ConnectionStatusProps) {
+function ConnectionStatus({
+  className,
+  onRetry,
+  showDetails = false,
+}: ConnectionStatusProps) {
   const {
     connectionState,
     isOnline,
     lastConnected,
     retryCount,
-    retryConnection
+    retryConnection,
   } = useConnectionStatus();
 
   const handleRetry = async () => {
@@ -114,17 +123,34 @@ function ConnectionStatus({ className, onRetry, showDetails = false }: Connectio
 
   const getStatusIcon = () => {
     switch (connectionState) {
-      case 'connected':
+      case "connected":
         return (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" fill="none"/>
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="M9 12l2 2 4-4"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+            />
           </svg>
         );
-      case 'connecting':
-      case 'reconnecting':
+      case "connecting":
+      case "reconnecting":
         return (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="spinning">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="spinning"
+          >
             <path
               d="M21 12a9 9 0 11-6.219-8.56"
               stroke="currentColor"
@@ -133,13 +159,19 @@ function ConnectionStatus({ className, onRetry, showDetails = false }: Connectio
             />
           </svg>
         );
-      case 'disconnected':
+      case "disconnected":
       default:
         return (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M15 9l-6 6" stroke="currentColor" strokeWidth="2"/>
-            <path d="M9 9l6 6" stroke="currentColor" strokeWidth="2"/>
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path d="M15 9l-6 6" stroke="currentColor" strokeWidth="2" />
+            <path d="M9 9l6 6" stroke="currentColor" strokeWidth="2" />
           </svg>
         );
     }
@@ -147,48 +179,44 @@ function ConnectionStatus({ className, onRetry, showDetails = false }: Connectio
 
   const getStatusText = () => {
     if (!isOnline) {
-      return 'Offline';
+      return "Offline";
     }
 
     switch (connectionState) {
-      case 'connected':
-        return 'Connected';
-      case 'connecting':
-        return 'Connecting...';
-      case 'reconnecting':
+      case "connected":
+        return "Connected";
+      case "connecting":
+        return "Connecting...";
+      case "reconnecting":
         return `Reconnecting... (${retryCount}/5)`;
-      case 'disconnected':
-        return 'Disconnected';
+      case "disconnected":
+        return "Disconnected";
       default:
-        return 'Unknown';
+        return "Unknown";
     }
   };
 
   const getStatusClass = () => {
-    if (!isOnline) return 'offline';
-    
+    if (!isOnline) return "offline";
+
     switch (connectionState) {
-      case 'connected':
-        return 'connected';
-      case 'connecting':
-      case 'reconnecting':
-        return 'connecting';
-      case 'disconnected':
-        return 'disconnected';
+      case "connected":
+        return "connected";
+      case "connecting":
+      case "reconnecting":
+        return "connecting";
+      case "disconnected":
+        return "disconnected";
       default:
-        return 'disconnected';
+        return "disconnected";
     }
   };
 
   return (
-    <div className={`connection-status ${getStatusClass()} ${className || ''}`}>
+    <div className={`connection-status ${getStatusClass()} ${className || ""}`}>
       <div className="connection-status__indicator">
-        <span className="connection-status__icon">
-          {getStatusIcon()}
-        </span>
-        <span className="connection-status__text">
-          {getStatusText()}
-        </span>
+        <span className="connection-status__icon">{getStatusIcon()}</span>
+        <span className="connection-status__text">{getStatusText()}</span>
       </div>
 
       {showDetails && (
@@ -198,14 +226,17 @@ function ConnectionStatus({ className, onRetry, showDetails = false }: Connectio
               Last connected: {lastConnected.toLocaleTimeString()}
             </div>
           )}
-          
-          {(connectionState === 'disconnected' || connectionState === 'reconnecting') && (
-            <button 
+
+          {(connectionState === "disconnected" ||
+            connectionState === "reconnecting") && (
+            <button
               className="connection-status__retry"
               onClick={handleRetry}
-              disabled={connectionState === 'reconnecting'}
+              disabled={connectionState === "reconnecting"}
             >
-              {connectionState === 'reconnecting' ? 'Retrying...' : 'Retry Connection'}
+              {connectionState === "reconnecting"
+                ? "Retrying..."
+                : "Retry Connection"}
             </button>
           )}
         </div>

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { MediaFile } from '../types/media';
-import FileThumbnail from './FileThumbnail';
-import MediaViewer from './MediaViewer';
-import BatchOperations from './BatchOperations';
-import './MediaFileGrid.css';
+import React, { useState, useEffect } from "react";
+import { MediaFile } from "../types/media";
+import FileThumbnail from "./FileThumbnail";
+import MediaViewer from "./MediaViewer";
+import BatchOperations from "./BatchOperations";
+import "./MediaFileGrid.css";
 
 interface MediaFileGridProps {
   files: MediaFile[];
   onFileSelect?: (file: MediaFile) => void;
   onBatchOperations?: () => void;
-  viewMode?: 'grid' | 'list';
+  viewMode?: "grid" | "list";
   showBatchControls?: boolean;
   className?: string;
 }
@@ -18,16 +18,20 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
   files,
   onFileSelect,
   onBatchOperations,
-  viewMode = 'grid',
+  viewMode = "grid",
   showBatchControls = true,
-  className = ''
+  className = "",
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [currentFile, setCurrentFile] = useState<MediaFile | null>(null);
   const [showBatchOps, setShowBatchOps] = useState(false);
-  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date' | 'type'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [filterType, setFilterType] = useState<'all' | 'image' | 'document' | 'data'>('all');
+  const [sortBy, setSortBy] = useState<"name" | "size" | "date" | "type">(
+    "name",
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [filterType, setFilterType] = useState<
+    "all" | "image" | "document" | "data"
+  >("all");
 
   useEffect(() => {
     // Reset selection when files change
@@ -53,7 +57,7 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
   };
 
   const handleSelectAll = () => {
-    setSelectedFiles(new Set(filteredAndSortedFiles.map(f => f.path)));
+    setSelectedFiles(new Set(filteredAndSortedFiles.map((f) => f.path)));
   };
 
   const handleSelectNone = () => {
@@ -62,26 +66,26 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
 
   const handleSort = (field: typeof sortBy) => {
     if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
-      setSortOrder('asc');
+      setSortOrder("asc");
     }
   };
 
   const getFilteredFiles = (): MediaFile[] => {
-    if (filterType === 'all') return files;
-    
-    return files.filter(file => {
-      const ext = file.name.split('.').pop()?.toLowerCase() || '';
-      
+    if (filterType === "all") return files;
+
+    return files.filter((file) => {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+
       switch (filterType) {
-        case 'image':
-          return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
-        case 'document':
-          return ['pdf', 'doc', 'docx', 'txt', 'md'].includes(ext);
-        case 'data':
-          return ['csv', 'json', 'xml', 'xlsx'].includes(ext);
+        case "image":
+          return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
+        case "document":
+          return ["pdf", "doc", "docx", "txt", "md"].includes(ext);
+        case "data":
+          return ["csv", "json", "xml", "xlsx"].includes(ext);
         default:
           return true;
       }
@@ -91,30 +95,30 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
   const getSortedFiles = (filesToSort: MediaFile[]): MediaFile[] => {
     return [...filesToSort].sort((a, b) => {
       let aValue: any, bValue: any;
-      
+
       switch (sortBy) {
-        case 'name':
+        case "name":
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
           break;
-        case 'size':
+        case "size":
           aValue = a.size;
           bValue = b.size;
           break;
-        case 'date':
+        case "date":
           aValue = a.lastModified;
           bValue = b.lastModified;
           break;
-        case 'type':
+        case "type":
           aValue = a.type;
           bValue = b.type;
           break;
         default:
           return 0;
       }
-      
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+
+      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
   };
@@ -123,14 +127,14 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
 
   const renderGridView = () => (
     <div className="media-grid">
-      {filteredAndSortedFiles.map(file => (
+      {filteredAndSortedFiles.map((file) => (
         <div key={file.path} className="grid-item">
           <FileThumbnail
             file={file}
             size="medium"
             onClick={() => handleFileClick(file)}
             onDoubleClick={() => handleFileDoubleClick(file)}
-            className={selectedFiles.has(file.path) ? 'selected' : ''}
+            className={selectedFiles.has(file.path) ? "selected" : ""}
           />
           {showBatchControls && (
             <input
@@ -148,24 +152,24 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
   const renderListView = () => (
     <div className="media-list">
       <div className="list-header">
-        <div className="header-cell" onClick={() => handleSort('name')}>
-          Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+        <div className="header-cell" onClick={() => handleSort("name")}>
+          Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
         </div>
-        <div className="header-cell" onClick={() => handleSort('size')}>
-          Size {sortBy === 'size' && (sortOrder === 'asc' ? '↑' : '↓')}
+        <div className="header-cell" onClick={() => handleSort("size")}>
+          Size {sortBy === "size" && (sortOrder === "asc" ? "↑" : "↓")}
         </div>
-        <div className="header-cell" onClick={() => handleSort('type')}>
-          Type {sortBy === 'type' && (sortOrder === 'asc' ? '↑' : '↓')}
+        <div className="header-cell" onClick={() => handleSort("type")}>
+          Type {sortBy === "type" && (sortOrder === "asc" ? "↑" : "↓")}
         </div>
-        <div className="header-cell" onClick={() => handleSort('date')}>
-          Modified {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+        <div className="header-cell" onClick={() => handleSort("date")}>
+          Modified {sortBy === "date" && (sortOrder === "asc" ? "↑" : "↓")}
         </div>
       </div>
-      
-      {filteredAndSortedFiles.map(file => (
-        <div 
-          key={file.path} 
-          className={`list-item ${selectedFiles.has(file.path) ? 'selected' : ''}`}
+
+      {filteredAndSortedFiles.map((file) => (
+        <div
+          key={file.path}
+          className={`list-item ${selectedFiles.has(file.path) ? "selected" : ""}`}
           onClick={() => handleFileClick(file)}
           onDoubleClick={() => handleFileDoubleClick(file)}
         >
@@ -178,11 +182,7 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
               onClick={(e) => e.stopPropagation()}
             />
           )}
-          <FileThumbnail
-            file={file}
-            size="small"
-            showMetadata={false}
-          />
+          <FileThumbnail file={file} size="small" showMetadata={false} />
           <div className="file-details">
             <div className="file-name">{file.name}</div>
             <div className="file-info">
@@ -199,11 +199,11 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
   );
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) return "0 B";
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   };
 
   return (
@@ -211,14 +211,14 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
       <div className="grid-controls">
         <div className="view-controls">
           <button
-            className={`view-button ${viewMode === 'grid' ? 'active' : ''}`}
+            className={`view-button ${viewMode === "grid" ? "active" : ""}`}
             onClick={() => {}}
             title="Grid view"
           >
             ⊞
           </button>
           <button
-            className={`view-button ${viewMode === 'list' ? 'active' : ''}`}
+            className={`view-button ${viewMode === "list" ? "active" : ""}`}
             onClick={() => {}}
             title="List view"
           >
@@ -227,8 +227,8 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
         </div>
 
         <div className="filter-controls">
-          <select 
-            value={filterType} 
+          <select
+            value={filterType}
             onChange={(e) => setFilterType(e.target.value as any)}
             className="filter-select"
           >
@@ -250,7 +250,7 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
             <button onClick={handleSelectNone} className="select-button">
               Select None
             </button>
-            <button 
+            <button
               onClick={() => setShowBatchOps(true)}
               disabled={selectedFiles.size === 0}
               className="batch-button"
@@ -263,11 +263,11 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
 
       <div className="file-count">
         {filteredAndSortedFiles.length} files
-        {filterType !== 'all' && ` (${filterType})`}
+        {filterType !== "all" && ` (${filterType})`}
       </div>
 
       <div className="grid-content">
-        {viewMode === 'grid' ? renderGridView() : renderListView()}
+        {viewMode === "grid" ? renderGridView() : renderListView()}
       </div>
 
       {filteredAndSortedFiles.length === 0 && (
@@ -293,10 +293,12 @@ const MediaFileGrid: React.FC<MediaFileGridProps> = ({
 
       {showBatchOps && selectedFiles.size > 0 && (
         <BatchOperations
-          files={filteredAndSortedFiles.filter(f => selectedFiles.has(f.path))}
+          files={filteredAndSortedFiles.filter((f) =>
+            selectedFiles.has(f.path),
+          )}
           onClose={() => setShowBatchOps(false)}
           onOperationComplete={(operation) => {
-            console.log('Batch operation completed:', operation);
+            console.log("Batch operation completed:", operation);
             setShowBatchOps(false);
           }}
         />

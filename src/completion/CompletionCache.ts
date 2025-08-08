@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 /**
  * CompletionCache manages caching of completion results to improve performance
@@ -15,11 +15,11 @@ export class CompletionCache {
   private generateCacheKey(
     document: vscode.TextDocument,
     position: vscode.Position,
-    context: string
+    context: string,
   ): string {
     const lineText = document.lineAt(position).text;
     const prefix = lineText.substring(0, position.character);
-    
+
     return `${document.languageId}:${prefix}:${context.substring(0, 100)}`;
   }
 
@@ -29,21 +29,21 @@ export class CompletionCache {
   getCachedCompletion(
     document: vscode.TextDocument,
     position: vscode.Position,
-    context: string
+    context: string,
   ): string | null {
     const key = this.generateCacheKey(document, position, context);
     const cached = this.cache.get(key);
-    
+
     if (!cached) {
       return null;
     }
-    
+
     // Check if cache entry is expired
     if (Date.now() - cached.timestamp > this.cacheExpirationMs) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return cached.completion;
   }
 
@@ -54,10 +54,10 @@ export class CompletionCache {
     document: vscode.TextDocument,
     position: vscode.Position,
     context: string,
-    completion: string
+    completion: string,
   ): void {
     const key = this.generateCacheKey(document, position, context);
-    
+
     // If cache is full, remove oldest entries
     if (this.cache.size >= this.maxCacheSize) {
       const entries = Array.from(this.cache.entries());
@@ -66,10 +66,10 @@ export class CompletionCache {
         this.cache.delete(oldestKey);
       }
     }
-    
+
     this.cache.set(key, {
       completion,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -86,7 +86,7 @@ export class CompletionCache {
   getCacheStats(): { size: number; maxSize: number } {
     return {
       size: this.cache.size,
-      maxSize: this.maxCacheSize
+      maxSize: this.maxCacheSize,
     };
   }
 }

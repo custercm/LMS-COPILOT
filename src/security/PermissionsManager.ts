@@ -1,5 +1,5 @@
-import * as vscode from 'vscode';
-import { SecurityManager } from './SecurityManager';
+import * as vscode from "vscode";
+import { SecurityManager } from "./SecurityManager";
 
 /**
  * Manages file operation permissions and enforces security policies
@@ -12,10 +12,10 @@ export class PermissionsManager {
 
   // Permission levels
   public readonly PERMISSIONS = {
-    READ: 'READ',
-    WRITE: 'WRITE',
-    EXECUTE: 'EXECUTE',
-    DELETE: 'DELETE'
+    READ: "READ",
+    WRITE: "WRITE",
+    EXECUTE: "EXECUTE",
+    DELETE: "DELETE",
   } as const;
 
   private constructor() {
@@ -33,50 +33,54 @@ export class PermissionsManager {
    * Check if operation is allowed on file/directory
    */
   public async checkPermission(
-    path: string, 
+    path: string,
     operation: keyof typeof this.PERMISSIONS,
-    options: PermissionOptions = {}
+    options: PermissionOptions = {},
   ): Promise<PermissionResult> {
     try {
       // Check cache first
       const cacheKey = `${path}:${operation}`;
       const cached = this.permissionCache.get(cacheKey);
-      if (cached && (Date.now() - cached.timestamp) < this.cacheTimeout) {
+      if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
         return cached.result;
       }
 
       // Perform permission check
-      const result = await this.performPermissionCheck(path, operation, options);
-      
+      const result = await this.performPermissionCheck(
+        path,
+        operation,
+        options,
+      );
+
       // Cache result
       this.permissionCache.set(cacheKey, {
         result,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // Log the permission check
       this.securityManager.logAuditEvent({
-        type: 'permission_check',
+        type: "permission_check",
         filePath: path,
         timestamp: new Date(),
         approved: result.allowed,
-        details: { operation, reason: result.reason }
+        details: { operation, reason: result.reason },
       });
 
       return result;
     } catch (error) {
       const errorResult: PermissionResult = {
         allowed: false,
-        reason: `Permission check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        requiresUserConfirmation: false
+        reason: `Permission check failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        requiresUserConfirmation: false,
       };
 
       this.securityManager.logAuditEvent({
-        type: 'permission_error',
+        type: "permission_error",
         filePath: path,
         timestamp: new Date(),
         approved: false,
-        details: { operation, error: errorResult.reason }
+        details: { operation, error: errorResult.reason },
       });
 
       return errorResult;
@@ -89,26 +93,27 @@ export class PermissionsManager {
   public async requestUserPermission(
     operation: string,
     path: string,
-    details: string
+    details: string,
   ): Promise<boolean> {
     const message = `LMS Copilot wants to ${operation} on "${path}". ${details}`;
-    const options = ['Allow', 'Deny', 'Always Allow for This Session'];
-    
+    const options = ["Allow", "Deny", "Always Allow for This Session"];
+
     const choice = await vscode.window.showWarningMessage(message, ...options);
-    
-    const approved = choice === 'Allow' || choice === 'Always Allow for This Session';
-    
+
+    const approved =
+      choice === "Allow" || choice === "Always Allow for This Session";
+
     // Log the user's decision
     this.securityManager.logAuditEvent({
-      type: 'user_permission_request',
+      type: "user_permission_request",
       filePath: path,
       timestamp: new Date(),
       approved,
-      details: { operation, choice, details }
+      details: { operation, choice, details },
     });
 
     // If "Always Allow", add to approved commands
-    if (choice === 'Always Allow for This Session') {
+    if (choice === "Always Allow for This Session") {
       this.securityManager.approveCommand(`${operation}:${path}`);
     }
 
@@ -126,7 +131,7 @@ export class PermissionsManager {
         canRead: false,
         canWrite: false,
         canExecute: false,
-        trustedWorkspace: false
+        trustedWorkspace: false,
       };
     }
 
@@ -138,7 +143,7 @@ export class PermissionsManager {
       canRead: true, // Reading is generally allowed
       canWrite: isTrusted, // Writing requires trusted workspace
       canExecute: isTrusted, // Execution requires trusted workspace
-      trustedWorkspace: isTrusted
+      trustedWorkspace: isTrusted,
     };
   }
 
@@ -155,16 +160,16 @@ export class PermissionsManager {
   private async performPermissionCheck(
     path: string,
     operation: keyof typeof this.PERMISSIONS,
-    options: PermissionOptions
+    options: PermissionOptions,
   ): Promise<PermissionResult> {
     // Check basic workspace permissions first
     const workspacePerms = this.checkWorkspacePermissions();
-    
+
     if (!workspacePerms.hasWorkspace) {
       return {
         allowed: false,
-        reason: 'No workspace is open',
-        requiresUserConfirmation: false
+        reason: "No workspace is open",
+        requiresUserConfirmation: false,
       };
     }
 
@@ -172,30 +177,30 @@ export class PermissionsManager {
     if (!this.isPathInWorkspace(path)) {
       return {
         allowed: false,
-        reason: 'Path is outside workspace boundaries',
-        requiresUserConfirmation: false
+        reason: "Path is outside workspace boundaries",
+        requiresUserConfirmation: false,
       };
     }
 
     // Check operation-specific permissions
     switch (operation) {
-      case 'READ':
+      case "READ":
         return this.checkReadPermission(path, workspacePerms, options);
-      
-      case 'WRITE':
+
+      case "WRITE":
         return this.checkWritePermission(path, workspacePerms, options);
-      
-      case 'EXECUTE':
+
+      case "EXECUTE":
         return this.checkExecutePermission(path, workspacePerms, options);
-      
-      case 'DELETE':
+
+      case "DELETE":
         return this.checkDeletePermission(path, workspacePerms, options);
-      
+
       default:
         return {
           allowed: false,
-          reason: 'Unknown operation type',
-          requiresUserConfirmation: false
+          reason: "Unknown operation type",
+          requiresUserConfirmation: false,
         };
     }
   }
@@ -203,13 +208,13 @@ export class PermissionsManager {
   private checkReadPermission(
     path: string,
     workspacePerms: WorkspacePermissions,
-    options: PermissionOptions
+    options: PermissionOptions,
   ): PermissionResult {
     if (!workspacePerms.canRead) {
       return {
         allowed: false,
-        reason: 'Workspace does not allow read operations',
-        requiresUserConfirmation: false
+        reason: "Workspace does not allow read operations",
+        requiresUserConfirmation: false,
       };
     }
 
@@ -217,29 +222,30 @@ export class PermissionsManager {
     if (this.isSensitiveFile(path)) {
       return {
         allowed: false,
-        reason: 'File contains sensitive information',
+        reason: "File contains sensitive information",
         requiresUserConfirmation: true,
-        details: 'This file may contain passwords, tokens, or other sensitive data'
+        details:
+          "This file may contain passwords, tokens, or other sensitive data",
       };
     }
 
     return {
       allowed: true,
-      reason: 'Read operation permitted',
-      requiresUserConfirmation: false
+      reason: "Read operation permitted",
+      requiresUserConfirmation: false,
     };
   }
 
   private checkWritePermission(
     path: string,
     workspacePerms: WorkspacePermissions,
-    options: PermissionOptions
+    options: PermissionOptions,
   ): PermissionResult {
     if (!workspacePerms.canWrite) {
       return {
         allowed: false,
-        reason: 'Workspace is not trusted for write operations',
-        requiresUserConfirmation: false
+        reason: "Workspace is not trusted for write operations",
+        requiresUserConfirmation: false,
       };
     }
 
@@ -247,9 +253,10 @@ export class PermissionsManager {
     if (this.isCriticalFile(path)) {
       return {
         allowed: false,
-        reason: 'Cannot modify critical system files',
+        reason: "Cannot modify critical system files",
         requiresUserConfirmation: true,
-        details: 'This file is critical to your project or system functionality'
+        details:
+          "This file is critical to your project or system functionality",
       };
     }
 
@@ -257,29 +264,29 @@ export class PermissionsManager {
     if (this.requiresBackup(path) && !options.hasBackup) {
       return {
         allowed: false,
-        reason: 'File modification requires backup',
+        reason: "File modification requires backup",
         requiresUserConfirmation: true,
-        details: 'This file should be backed up before modification'
+        details: "This file should be backed up before modification",
       };
     }
 
     return {
       allowed: true,
-      reason: 'Write operation permitted',
-      requiresUserConfirmation: false
+      reason: "Write operation permitted",
+      requiresUserConfirmation: false,
     };
   }
 
   private checkExecutePermission(
     path: string,
     workspacePerms: WorkspacePermissions,
-    options: PermissionOptions
+    options: PermissionOptions,
   ): PermissionResult {
     if (!workspacePerms.canExecute) {
       return {
         allowed: false,
-        reason: 'Workspace is not trusted for execution',
-        requiresUserConfirmation: false
+        reason: "Workspace is not trusted for execution",
+        requiresUserConfirmation: false,
       };
     }
 
@@ -287,29 +294,29 @@ export class PermissionsManager {
     if (this.isExecutableFile(path)) {
       return {
         allowed: false,
-        reason: 'Direct execution of files is not permitted',
+        reason: "Direct execution of files is not permitted",
         requiresUserConfirmation: true,
-        details: 'Use terminal commands instead of direct file execution'
+        details: "Use terminal commands instead of direct file execution",
       };
     }
 
     return {
       allowed: true,
-      reason: 'Execute operation permitted',
-      requiresUserConfirmation: false
+      reason: "Execute operation permitted",
+      requiresUserConfirmation: false,
     };
   }
 
   private checkDeletePermission(
     path: string,
     workspacePerms: WorkspacePermissions,
-    options: PermissionOptions
+    options: PermissionOptions,
   ): PermissionResult {
     if (!workspacePerms.canWrite) {
       return {
         allowed: false,
-        reason: 'Workspace is not trusted for delete operations',
-        requiresUserConfirmation: false
+        reason: "Workspace is not trusted for delete operations",
+        requiresUserConfirmation: false,
       };
     }
 
@@ -317,17 +324,17 @@ export class PermissionsManager {
     if (this.isCriticalFile(path)) {
       return {
         allowed: false,
-        reason: 'Cannot delete critical files',
-        requiresUserConfirmation: false
+        reason: "Cannot delete critical files",
+        requiresUserConfirmation: false,
       };
     }
 
     // Always require confirmation for delete operations
     return {
       allowed: true,
-      reason: 'Delete operation permitted with confirmation',
+      reason: "Delete operation permitted with confirmation",
       requiresUserConfirmation: true,
-      details: 'This action cannot be undone'
+      details: "This action cannot be undone",
     };
   }
 
@@ -337,29 +344,29 @@ export class PermissionsManager {
       canWrite: false,
       canExecute: false,
       canDelete: false,
-      restrictions: [] as string[]
+      restrictions: [] as string[],
     };
 
     // Check each operation
-    const readResult = await this.checkPermission(path, 'READ');
+    const readResult = await this.checkPermission(path, "READ");
     operations.canRead = readResult.allowed;
     if (!readResult.allowed) {
       operations.restrictions.push(`Read: ${readResult.reason}`);
     }
 
-    const writeResult = await this.checkPermission(path, 'WRITE');
+    const writeResult = await this.checkPermission(path, "WRITE");
     operations.canWrite = writeResult.allowed;
     if (!writeResult.allowed) {
       operations.restrictions.push(`Write: ${writeResult.reason}`);
     }
 
-    const executeResult = await this.checkPermission(path, 'EXECUTE');
+    const executeResult = await this.checkPermission(path, "EXECUTE");
     operations.canExecute = executeResult.allowed;
     if (!executeResult.allowed) {
       operations.restrictions.push(`Execute: ${executeResult.reason}`);
     }
 
-    const deleteResult = await this.checkPermission(path, 'DELETE');
+    const deleteResult = await this.checkPermission(path, "DELETE");
     operations.canDelete = deleteResult.allowed;
     if (!deleteResult.allowed) {
       operations.restrictions.push(`Delete: ${deleteResult.reason}`);
@@ -372,8 +379,8 @@ export class PermissionsManager {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) return false;
 
-    return workspaceFolders.some(folder => 
-      path.startsWith(folder.uri.fsPath)
+    return workspaceFolders.some((folder) =>
+      path.startsWith(folder.uri.fsPath),
     );
   }
 
@@ -388,10 +395,10 @@ export class PermissionsManager {
       /\.pem$/i,
       /\.p12$/i,
       /\.pfx$/i,
-      /config\/secrets/i
+      /config\/secrets/i,
     ];
 
-    return sensitivePatterns.some(pattern => pattern.test(path));
+    return sensitivePatterns.some((pattern) => pattern.test(path));
   }
 
   private isCriticalFile(path: string): boolean {
@@ -404,20 +411,31 @@ export class PermissionsManager {
       /README\.md$/i,
       /LICENSE$/i,
       /Dockerfile$/i,
-      /docker-compose/i
+      /docker-compose/i,
     ];
 
-    return criticalPatterns.some(pattern => pattern.test(path));
+    return criticalPatterns.some((pattern) => pattern.test(path));
   }
 
   private isExecutableFile(path: string): boolean {
-    const executableExtensions = ['.exe', '.bat', '.cmd', '.sh', '.ps1', '.app'];
-    return executableExtensions.some(ext => path.toLowerCase().endsWith(ext));
+    const executableExtensions = [
+      ".exe",
+      ".bat",
+      ".cmd",
+      ".sh",
+      ".ps1",
+      ".app",
+    ];
+    return executableExtensions.some((ext) => path.toLowerCase().endsWith(ext));
   }
 
   private requiresBackup(path: string): boolean {
     // Files that should be backed up before modification
-    return this.isCriticalFile(path) || path.includes('src/') || path.includes('lib/');
+    return (
+      this.isCriticalFile(path) ||
+      path.includes("src/") ||
+      path.includes("lib/")
+    );
   }
 }
 
@@ -456,4 +474,9 @@ interface SafeOperations {
   restrictions: string[];
 }
 
-export type { PermissionOptions, PermissionResult, WorkspacePermissions, SafeOperations };
+export type {
+  PermissionOptions,
+  PermissionResult,
+  WorkspacePermissions,
+  SafeOperations,
+};

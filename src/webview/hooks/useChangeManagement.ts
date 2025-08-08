@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FileChange, ChangeSet } from '../types/changes';
+import { useState } from "react";
+import { FileChange, ChangeSet } from "../types/changes";
 
 interface ChangeState {
   pendingChanges: ChangeSet[];
@@ -11,39 +11,41 @@ export function useChangeManagement() {
   const [changeState, setChangeState] = useState<ChangeState>({
     pendingChanges: [],
     appliedChanges: [],
-    revertedChanges: []
+    revertedChanges: [],
   });
 
   // Add a new change to the pending list
   const addPendingChange = (changeSet: ChangeSet) => {
-    setChangeState(prev => ({
+    setChangeState((prev) => ({
       ...prev,
-      pendingChanges: [...prev.pendingChanges, changeSet]
+      pendingChanges: [...prev.pendingChanges, changeSet],
     }));
   };
-    
+
   // Apply all pending changes
   const applyAllChanges = () => {
-    setChangeState(prev => ({
+    setChangeState((prev) => ({
       pendingChanges: [],
       appliedChanges: [...prev.appliedChanges, ...prev.pendingChanges],
-      revertedChanges: prev.revertedChanges
+      revertedChanges: prev.revertedChanges,
     }));
   };
 
   // Revert all pending changes
   const revertAllChanges = () => {
-    setChangeState(prev => ({
+    setChangeState((prev) => ({
       pendingChanges: [],
       appliedChanges: prev.appliedChanges,
-      revertedChanges: [...prev.revertedChanges, ...prev.pendingChanges]
+      revertedChanges: [...prev.revertedChanges, ...prev.pendingChanges],
     }));
   };
 
   // Apply a single change by ID
   const applyChangeById = (changeId: string) => {
-    setChangeState(prev => {
-      const pendingIndex = prev.pendingChanges.findIndex(c => c.id === changeId);
+    setChangeState((prev) => {
+      const pendingIndex = prev.pendingChanges.findIndex(
+        (c) => c.id === changeId,
+      );
 
       if (pendingIndex !== -1) {
         const changeSet = prev.pendingChanges[pendingIndex];
@@ -52,7 +54,7 @@ export function useChangeManagement() {
         return {
           ...prev,
           pendingChanges: updatedPending,
-          appliedChanges: [...prev.appliedChanges, changeSet]
+          appliedChanges: [...prev.appliedChanges, changeSet],
         };
       }
 
@@ -62,8 +64,10 @@ export function useChangeManagement() {
 
   // Revert a single change by ID
   const revertChangeById = (changeId: string) => {
-    setChangeState(prev => {
-      const pendingIndex = prev.pendingChanges.findIndex(c => c.id === changeId);
+    setChangeState((prev) => {
+      const pendingIndex = prev.pendingChanges.findIndex(
+        (c) => c.id === changeId,
+      );
 
       if (pendingIndex !== -1) {
         const changeSet = prev.pendingChanges[pendingIndex];
@@ -73,7 +77,7 @@ export function useChangeManagement() {
         return {
           ...prev,
           pendingChanges: updatedPending,
-          revertedChanges: [...prev.revertedChanges, changeSet]
+          revertedChanges: [...prev.revertedChanges, changeSet],
         };
       }
 
@@ -86,13 +90,13 @@ export function useChangeManagement() {
     let additions = 0;
     let deletions = 0;
 
-    changeState.pendingChanges.forEach(changeSet => {
-      changeSet.changes.forEach(change => {
-        if (change.changeType === 'create' || change.changeType === 'modify') {
-          additions += change.proposedContent.split('\n').length;
-          deletions += change.originalContent.split('\n').length;
-        } else if (change.changeType === 'delete') {
-          deletions += change.originalContent.split('\n').length;
+    changeState.pendingChanges.forEach((changeSet) => {
+      changeSet.changes.forEach((change) => {
+        if (change.changeType === "create" || change.changeType === "modify") {
+          additions += change.proposedContent.split("\n").length;
+          deletions += change.originalContent.split("\n").length;
+        } else if (change.changeType === "delete") {
+          deletions += change.originalContent.split("\n").length;
         }
       });
     });
@@ -101,37 +105,39 @@ export function useChangeManagement() {
   };
 
   // Get file status indicators
-  const getFileStatus = (filePath: string): 'pending' | 'applied' | 'reverted' => {
+  const getFileStatus = (
+    filePath: string,
+  ): "pending" | "applied" | "reverted" => {
     for (const changeSet of changeState.pendingChanges) {
-      if (changeSet.changes.some(c => c.filePath === filePath)) {
-        return 'pending';
+      if (changeSet.changes.some((c) => c.filePath === filePath)) {
+        return "pending";
       }
     }
 
     for (const changeSet of changeState.appliedChanges) {
-      if (changeSet.changes.some(c => c.filePath === filePath)) {
-        return 'applied';
+      if (changeSet.changes.some((c) => c.filePath === filePath)) {
+        return "applied";
       }
     }
 
     for (const changeSet of changeState.revertedChanges) {
-      if (changeSet.changes.some(c => c.filePath === filePath)) {
-        return 'reverted';
+      if (changeSet.changes.some((c) => c.filePath === filePath)) {
+        return "reverted";
       }
     }
 
-    return 'pending'; // Default fallback
+    return "pending"; // Default fallback
   };
 
   // Get changes for a specific file
   const getChangesForFile = (filePath: string): FileChange[] => {
     const allChanges = [
-      ...changeState.pendingChanges.flatMap(c => c.changes),
-      ...changeState.appliedChanges.flatMap(c => c.changes),
-      ...changeState.revertedChanges.flatMap(c => c.changes)
+      ...changeState.pendingChanges.flatMap((c) => c.changes),
+      ...changeState.appliedChanges.flatMap((c) => c.changes),
+      ...changeState.revertedChanges.flatMap((c) => c.changes),
     ];
 
-    return allChanges.filter(change => change.filePath === filePath);
+    return allChanges.filter((change) => change.filePath === filePath);
   };
 
   // Get file snapshot for tracking
@@ -149,38 +155,38 @@ export function useChangeManagement() {
 
   // Test support methods - these would be used in testing environment only
   const mockApplyChanges = (changes: FileChange[]) => {
-    setChangeState(prev => ({
+    setChangeState((prev) => ({
       ...prev,
       appliedChanges: [
         ...prev.appliedChanges,
         {
           id: `test-${Date.now()}`,
-          messageId: 'test-message',
+          messageId: "test-message",
           changes,
-          status: 'applied',
-          description: 'Test changes applied',
+          status: "applied",
+          description: "Test changes applied",
           fileCount: changes.length,
-          changeSummary: { additions: 0, deletions: 0 }
-        }
-      ]
+          changeSummary: { additions: 0, deletions: 0 },
+        },
+      ],
     }));
   };
-  
+
   const mockRejectChanges = (changes: FileChange[]) => {
-    setChangeState(prev => ({
+    setChangeState((prev) => ({
       ...prev,
       revertedChanges: [
         ...prev.revertedChanges,
         {
           id: `test-${Date.now()}`,
-          messageId: 'test-message',
+          messageId: "test-message",
           changes,
-          status: 'reverted',
-          description: 'Test changes rejected',
+          status: "reverted",
+          description: "Test changes rejected",
           fileCount: changes.length,
-          changeSummary: { additions: 0, deletions: 0 }
-        }
-      ]
+          changeSummary: { additions: 0, deletions: 0 },
+        },
+      ],
     }));
   };
 
@@ -197,6 +203,6 @@ export function useChangeManagement() {
     getFileSnapshot,
     rollbackChange,
     mockApplyChanges,
-    mockRejectChanges
+    mockRejectChanges,
   };
 }

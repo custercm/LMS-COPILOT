@@ -10,31 +10,31 @@ export class RateLimiter {
 
   // Default rate limit configurations
   private readonly defaultLimits: Record<string, RateLimitConfig> = {
-    'api_calls': {
+    api_calls: {
       maxRequests: 100,
       windowMs: 60000, // 1 minute
-      burstAllowance: 10 // Allow burst of 10 requests
+      burstAllowance: 10, // Allow burst of 10 requests
     },
-    'terminal_commands': {
+    terminal_commands: {
       maxRequests: 20,
       windowMs: 60000,
-      burstAllowance: 5
+      burstAllowance: 5,
     },
-    'file_operations': {
+    file_operations: {
       maxRequests: 50,
       windowMs: 60000,
-      burstAllowance: 10
+      burstAllowance: 10,
     },
-    'chat_messages': {
+    chat_messages: {
       maxRequests: 200,
       windowMs: 60000,
-      burstAllowance: 20
+      burstAllowance: 20,
     },
-    'code_completion': {
+    code_completion: {
       maxRequests: 500,
       windowMs: 60000,
-      burstAllowance: 50
-    }
+      burstAllowance: 50,
+    },
   };
 
   private constructor() {
@@ -52,25 +52,30 @@ export class RateLimiter {
   /**
    * Check if request is allowed under rate limit
    */
-  public checkLimit(key: string, customConfig?: Partial<RateLimitConfig>): RateLimitResult {
+  public checkLimit(
+    key: string,
+    customConfig?: Partial<RateLimitConfig>,
+  ): RateLimitResult {
     const config = { ...this.getConfig(key), ...customConfig };
     const now = Date.now();
     const windowStart = now - config.windowMs;
 
     let entry = this.limits.get(key);
-    
+
     if (!entry) {
       // First request for this key
       entry = {
         requests: [],
         burstCount: 0,
-        lastReset: now
+        lastReset: now,
       };
       this.limits.set(key, entry);
     }
 
     // Clean old requests outside the window
-    entry.requests = entry.requests.filter(timestamp => timestamp > windowStart);
+    entry.requests = entry.requests.filter(
+      (timestamp) => timestamp > windowStart,
+    );
 
     // Reset burst count if enough time has passed (reset every 10 seconds)
     if (now - entry.lastReset > 10000) {
@@ -83,10 +88,10 @@ export class RateLimiter {
       const timeUntilBurstReset = 10000 - (now - entry.lastReset);
       return {
         allowed: false,
-        reason: 'Burst limit exceeded',
+        reason: "Burst limit exceeded",
         retryAfter: Math.ceil(timeUntilBurstReset / 1000),
         remainingRequests: 0,
-        resetTime: new Date(now + timeUntilBurstReset)
+        resetTime: new Date(now + timeUntilBurstReset),
       };
     }
 
@@ -94,13 +99,13 @@ export class RateLimiter {
     if (entry.requests.length >= config.maxRequests) {
       const oldestRequest = Math.min(...entry.requests);
       const timeUntilReset = config.windowMs - (now - oldestRequest);
-      
+
       return {
         allowed: false,
-        reason: 'Rate limit exceeded',
+        reason: "Rate limit exceeded",
         retryAfter: Math.ceil(timeUntilReset / 1000),
         remainingRequests: 0,
-        resetTime: new Date(now + timeUntilReset)
+        resetTime: new Date(now + timeUntilReset),
       };
     }
 
@@ -113,10 +118,10 @@ export class RateLimiter {
 
     return {
       allowed: true,
-      reason: 'Request allowed',
+      reason: "Request allowed",
       retryAfter: 0,
       remainingRequests,
-      resetTime
+      resetTime,
     };
   }
 
@@ -143,20 +148,28 @@ export class RateLimiter {
         remainingRequests: config.maxRequests,
         resetTime: new Date(now + config.windowMs),
         burstRemaining: config.burstAllowance,
-        isLimited: false
+        isLimited: false,
       };
     }
 
     const windowStart = now - config.windowMs;
-    const activeRequests = entry.requests.filter(timestamp => timestamp > windowStart);
-    const remainingRequests = Math.max(0, config.maxRequests - activeRequests.length);
-    const burstRemaining = Math.max(0, config.burstAllowance - entry.burstCount);
+    const activeRequests = entry.requests.filter(
+      (timestamp) => timestamp > windowStart,
+    );
+    const remainingRequests = Math.max(
+      0,
+      config.maxRequests - activeRequests.length,
+    );
+    const burstRemaining = Math.max(
+      0,
+      config.burstAllowance - entry.burstCount,
+    );
 
     return {
       remainingRequests,
       resetTime: new Date(now + config.windowMs),
       burstRemaining,
-      isLimited: remainingRequests === 0 || burstRemaining === 0
+      isLimited: remainingRequests === 0 || burstRemaining === 0,
     };
   }
 
@@ -187,7 +200,7 @@ export class RateLimiter {
    */
   public getAllStatus(): Record<string, RateLimitStatus> {
     const status: Record<string, RateLimitStatus> = {};
-    
+
     // Include all default limits
     for (const key of Object.keys(this.defaultLimits)) {
       status[key] = this.getStatus(key);
@@ -209,16 +222,16 @@ export class RateLimiter {
   public createLimitedFunction<T extends (...args: any[]) => any>(
     key: string,
     fn: T,
-    config?: Partial<RateLimitConfig>
+    config?: Partial<RateLimitConfig>,
   ): (...args: Parameters<T>) => Promise<ReturnType<T>> {
     return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
       const result = this.checkLimit(key, config);
-      
+
       if (!result.allowed) {
         throw new RateLimitError(
           `Rate limit exceeded for ${key}: ${result.reason}`,
           result.retryAfter,
-          result.resetTime
+          result.resetTime,
         );
       }
 
@@ -240,7 +253,7 @@ export class RateLimiter {
    * Private methods
    */
   private getConfig(key: string): RateLimitConfig {
-    return this.defaultLimits[key] || this.defaultLimits['api_calls'];
+    return this.defaultLimits[key] || this.defaultLimits["api_calls"];
   }
 
   private startCleanupTimer(): void {
@@ -251,16 +264,21 @@ export class RateLimiter {
 
   private cleanupExpiredEntries(): void {
     const now = Date.now();
-    
+
     for (const [key, entry] of this.limits.entries()) {
       const config = this.getConfig(key);
       const windowStart = now - config.windowMs;
-      
+
       // Clean old requests
-      entry.requests = entry.requests.filter(timestamp => timestamp > windowStart);
-      
+      entry.requests = entry.requests.filter(
+        (timestamp) => timestamp > windowStart,
+      );
+
       // Remove empty entries
-      if (entry.requests.length === 0 && (now - entry.lastReset) > config.windowMs) {
+      if (
+        entry.requests.length === 0 &&
+        now - entry.lastReset > config.windowMs
+      ) {
         this.limits.delete(key);
       }
     }
@@ -274,10 +292,10 @@ export class RateLimitError extends Error {
   constructor(
     message: string,
     public retryAfter: number,
-    public resetTime: Date
+    public resetTime: Date,
   ) {
     super(message);
-    this.name = 'RateLimitError';
+    this.name = "RateLimitError";
   }
 }
 
@@ -285,7 +303,11 @@ export class RateLimitError extends Error {
  * Decorator for rate limiting methods
  */
 export function rateLimit(key: string, config?: Partial<RateLimitConfig>) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
@@ -296,7 +318,7 @@ export function rateLimit(key: string, config?: Partial<RateLimitConfig>) {
         throw new RateLimitError(
           `Rate limit exceeded for ${key}: ${result.reason}`,
           result.retryAfter,
-          result.resetTime
+          result.resetTime,
         );
       }
 

@@ -1,4 +1,4 @@
-import { ContextAnalyzer } from '../completion/ContextAnalyzer';
+import { ContextAnalyzer } from "../completion/ContextAnalyzer";
 
 class CodeAnalysis {
   private contextAnalyzer: ContextAnalyzer;
@@ -10,7 +10,7 @@ class CodeAnalysis {
   // Analyze code for understanding and suggestions
   async analyzeFile(filePath: string): Promise<string> {
     const fileContent = await this.readFile(filePath);
-    
+
     // Implementation to process file content with AI
     return "Analysis complete";
   }

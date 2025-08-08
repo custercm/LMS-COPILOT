@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 /**
  * Comprehensive security manager for LMS Copilot extension
@@ -10,12 +10,12 @@ export class SecurityManager {
   private rateLimit = new Map<string, { count: number; lastReset: number }>();
   private auditLog: AuditEntry[] = [];
   private readonly maxAuditEntries = 1000;
-  
+
   // Rate limiting configuration
   private readonly rateLimits = {
     apiCalls: { maxRequests: 100, windowMs: 60000 }, // 100 requests per minute
     terminalCommands: { maxRequests: 20, windowMs: 60000 }, // 20 commands per minute
-    fileOperations: { maxRequests: 50, windowMs: 60000 } // 50 file ops per minute
+    fileOperations: { maxRequests: 50, windowMs: 60000 }, // 50 file ops per minute
   };
 
   // Security risk levels
@@ -23,7 +23,7 @@ export class SecurityManager {
     LOW: 1,
     MEDIUM: 2,
     HIGH: 3,
-    CRITICAL: 4
+    CRITICAL: 4,
   };
 
   // Dangerous command patterns
@@ -38,15 +38,30 @@ export class SecurityManager {
     /exec\(/i,
     /\$\(.*\)/i, // Command substitution
     /`.*`/i, // Backtick execution
-    />.*\/dev\/null/i // Redirection that might hide output
+    />.*\/dev\/null/i, // Redirection that might hide output
   ];
 
   // Safe commands whitelist
   private readonly safeCommands = [
-    'ls', 'pwd', 'cd', 'cat', 'head', 'tail', 'grep', 'find',
-    'git status', 'git log', 'git diff', 'git branch',
-    'npm install', 'npm run', 'npm test', 'npm build',
-    'node --version', 'python --version', 'python3 --version'
+    "ls",
+    "pwd",
+    "cd",
+    "cat",
+    "head",
+    "tail",
+    "grep",
+    "find",
+    "git status",
+    "git log",
+    "git diff",
+    "git branch",
+    "npm install",
+    "npm run",
+    "npm test",
+    "npm build",
+    "node --version",
+    "python --version",
+    "python3 --version",
   ];
 
   private constructor() {}
@@ -77,26 +92,26 @@ export class SecurityManager {
     // Check for file system operations
     if (/\b(delete|remove|unlink|rmdir)\b/i.test(input)) {
       riskLevel = Math.max(riskLevel, this.riskLevels.HIGH);
-      concerns.push('File deletion operation detected');
+      concerns.push("File deletion operation detected");
     }
 
     // Check for network operations
     if (/\b(curl|wget|fetch|download)\b/i.test(input)) {
       riskLevel = Math.max(riskLevel, this.riskLevels.MEDIUM);
-      concerns.push('Network operation detected');
+      concerns.push("Network operation detected");
     }
 
     // Check for system modifications
     if (/\b(install|update|upgrade)\b/i.test(input)) {
       riskLevel = Math.max(riskLevel, this.riskLevels.MEDIUM);
-      concerns.push('System modification detected');
+      concerns.push("System modification detected");
     }
 
     return {
       level: riskLevel,
       concerns,
       sanitizedInput,
-      isApproved: this.isCommandApproved(input)
+      isApproved: this.isCommandApproved(input),
     };
   }
 
@@ -105,31 +120,31 @@ export class SecurityManager {
    */
   public validateTerminalCommand(command: string): ValidationResult {
     const assessment = this.assessRisk(command);
-    
+
     // Check if command is in safe whitelist
-    const baseCommand = command.trim().split(' ')[0];
+    const baseCommand = command.trim().split(" ")[0];
     if (this.safeCommands.includes(baseCommand)) {
-      return { isValid: true, reason: 'Command is whitelisted as safe' };
+      return { isValid: true, reason: "Command is whitelisted as safe" };
     }
 
     // Reject critical risk commands
     if (assessment.level >= this.riskLevels.CRITICAL) {
-      return { 
-        isValid: false, 
-        reason: `Command blocked due to critical security risk: ${assessment.concerns.join(', ')}` 
+      return {
+        isValid: false,
+        reason: `Command blocked due to critical security risk: ${assessment.concerns.join(", ")}`,
       };
     }
 
     // High risk commands require approval
     if (assessment.level >= this.riskLevels.HIGH && !assessment.isApproved) {
-      return { 
-        isValid: false, 
-        reason: 'High-risk command requires explicit user approval',
-        requiresApproval: true
+      return {
+        isValid: false,
+        reason: "High-risk command requires explicit user approval",
+        requiresApproval: true,
       };
     }
 
-    return { isValid: true, reason: 'Command passed security validation' };
+    return { isValid: true, reason: "Command passed security validation" };
   }
 
   /**
@@ -140,42 +155,42 @@ export class SecurityManager {
 
     // Check if file path is within workspace
     if (!this.isPathInWorkspace(path)) {
-      return { 
-        isValid: false, 
-        reason: 'File operation outside workspace is not allowed' 
+      return {
+        isValid: false,
+        reason: "File operation outside workspace is not allowed",
       };
     }
 
     // Check for dangerous file types
     if (this.isDangerousFileType(path)) {
-      return { 
-        isValid: false, 
-        reason: 'Operation on system/executable files is not allowed' 
+      return {
+        isValid: false,
+        reason: "Operation on system/executable files is not allowed",
       };
     }
 
     // Additional validation for write operations
-    if (['write', 'delete', 'modify'].includes(type)) {
+    if (["write", "delete", "modify"].includes(type)) {
       if (!this.checkWritePermissions(path)) {
-        return { 
-          isValid: false, 
-          reason: 'Insufficient permissions for write operation' 
+        return {
+          isValid: false,
+          reason: "Insufficient permissions for write operation",
         };
       }
     }
 
     // Content validation for write operations
-    if (content && type === 'write') {
+    if (content && type === "write") {
       const contentAssessment = this.assessRisk(content);
       if (contentAssessment.level >= this.riskLevels.HIGH) {
-        return { 
-          isValid: false, 
-          reason: `File content contains security risks: ${contentAssessment.concerns.join(', ')}` 
+        return {
+          isValid: false,
+          reason: `File content contains security risks: ${contentAssessment.concerns.join(", ")}`,
         };
       }
     }
 
-    return { isValid: true, reason: 'File operation validated' };
+    return { isValid: true, reason: "File operation validated" };
   }
 
   /**
@@ -189,7 +204,7 @@ export class SecurityManager {
     const key = operation;
     const current = this.rateLimit.get(key);
 
-    if (!current || (now - current.lastReset) > limit.windowMs) {
+    if (!current || now - current.lastReset > limit.windowMs) {
       // Reset or initialize
       this.rateLimit.set(key, { count: 1, lastReset: now });
       return true;
@@ -207,17 +222,19 @@ export class SecurityManager {
    * Sanitize user input
    */
   public sanitizeInput(input: string): string {
-    return input
-      // Remove potentially dangerous HTML/script tags
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-      // Remove potentially dangerous attributes
-      .replace(/on\w+\s*=\s*"[^"]*"/gi, '')
-      .replace(/javascript:/gi, '')
-      // Limit length to prevent DoS
-      .slice(0, 10000);
+    return (
+      input
+        // Remove potentially dangerous HTML/script tags
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+        .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+        .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
+        .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "")
+        // Remove potentially dangerous attributes
+        .replace(/on\w+\s*=\s*"[^"]*"/gi, "")
+        .replace(/javascript:/gi, "")
+        // Limit length to prevent DoS
+        .slice(0, 10000)
+    );
   }
 
   /**
@@ -226,10 +243,10 @@ export class SecurityManager {
   public approveCommand(command: string): void {
     this.commandApprovals.add(command);
     this.logAuditEvent({
-      type: 'command_approval',
+      type: "command_approval",
       command,
       timestamp: new Date(),
-      approved: true
+      approved: true,
     });
   }
 
@@ -245,7 +262,7 @@ export class SecurityManager {
    */
   public logAuditEvent(event: AuditEntry): void {
     this.auditLog.push(event);
-    
+
     // Keep audit log size manageable
     if (this.auditLog.length > this.maxAuditEntries) {
       this.auditLog.shift();
@@ -264,7 +281,7 @@ export class SecurityManager {
    */
   public generateCSP(webview: vscode.Webview): string {
     const cspSource = webview.cspSource;
-    
+
     // More restrictive CSP without unsafe-inline and unsafe-eval
     return [
       `default-src 'none'`,
@@ -279,8 +296,8 @@ export class SecurityManager {
       `worker-src 'none'`,
       `frame-ancestors 'none'`,
       `form-action 'none'`,
-      `base-uri 'none'`
-    ].join('; ');
+      `base-uri 'none'`,
+    ].join("; ");
   }
 
   /**
@@ -290,17 +307,35 @@ export class SecurityManager {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) return false;
 
-    return workspaceFolders.some(folder => 
-      filePath.startsWith(folder.uri.fsPath)
+    return workspaceFolders.some((folder) =>
+      filePath.startsWith(folder.uri.fsPath),
     );
   }
 
   private isDangerousFileType(filePath: string): boolean {
-    const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.ps1', '.scr', '.com'];
-    const systemPaths = ['/etc/', '/bin/', '/usr/bin/', '/System/', 'C:\\Windows\\'];
-    
-    return dangerousExtensions.some(ext => filePath.toLowerCase().endsWith(ext)) ||
-           systemPaths.some(path => filePath.toLowerCase().includes(path.toLowerCase()));
+    const dangerousExtensions = [
+      ".exe",
+      ".bat",
+      ".cmd",
+      ".sh",
+      ".ps1",
+      ".scr",
+      ".com",
+    ];
+    const systemPaths = [
+      "/etc/",
+      "/bin/",
+      "/usr/bin/",
+      "/System/",
+      "C:\\Windows\\",
+    ];
+
+    return (
+      dangerousExtensions.some((ext) => filePath.toLowerCase().endsWith(ext)) ||
+      systemPaths.some((path) =>
+        filePath.toLowerCase().includes(path.toLowerCase()),
+      )
+    );
   }
 
   private checkWritePermissions(filePath: string): boolean {
@@ -325,7 +360,7 @@ export interface ValidationResult {
 }
 
 export interface FileOperation {
-  type: 'read' | 'write' | 'delete' | 'modify';
+  type: "read" | "write" | "delete" | "modify";
   path: string;
   content?: string;
 }

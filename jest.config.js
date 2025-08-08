@@ -4,7 +4,7 @@ module.exports = {
   
   // Handle CSS and asset imports
   moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '\\.(css|less|scss|sass)$': '<rootDir>/__tests__/mocks/fileMock.js',
     '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/__tests__/mocks/fileMock.js'
   },
   

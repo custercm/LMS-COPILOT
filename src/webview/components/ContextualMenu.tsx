@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
-import '../styles/ContextualMenu.css';
+import React, { useState, useRef, useEffect } from "react";
+import { useKeyboardNavigation } from "../hooks/useKeyboardNavigation";
+import "../styles/ContextualMenu.css";
 
 export interface ContextMenuItem {
   id: string;
@@ -25,7 +25,7 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
   visible,
   position,
   onClose,
-  ariaLabel = "Context menu"
+  ariaLabel = "Context menu",
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [submenuVisible, setSubmenuVisible] = useState<string | null>(null);
@@ -33,10 +33,10 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
 
   const keyboardNavRef = useKeyboardNavigation({
     onArrowUp: () => {
-      setSelectedIndex(prev => (prev > 0 ? prev - 1 : items.length - 1));
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
     },
     onArrowDown: () => {
-      setSelectedIndex(prev => (prev < items.length - 1 ? prev + 1 : 0));
+      setSelectedIndex((prev) => (prev < items.length - 1 ? prev + 1 : 0));
     },
     onEnter: () => {
       const item = items[selectedIndex];
@@ -51,7 +51,7 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
     },
     onEscape: onClose,
     focusOnMount: true,
-    trapFocus: true
+    trapFocus: true,
   }) as React.RefObject<HTMLDivElement>;
 
   // Position menu within viewport
@@ -61,7 +61,7 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
       const rect = menu.getBoundingClientRect();
       const viewport = {
         width: window.innerWidth,
-        height: window.innerHeight
+        height: window.innerHeight,
       };
 
       let { x, y } = position;
@@ -90,8 +90,9 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
     };
 
     if (visible) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [visible, onClose]);
 
@@ -102,10 +103,10 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
       ref={keyboardNavRef}
       className="contextual-menu"
       style={{
-        position: 'fixed',
+        position: "fixed",
         left: position.x,
         top: position.y,
-        zIndex: 1000
+        zIndex: 1000,
       }}
       role="menu"
       aria-label={ariaLabel}
@@ -116,14 +117,16 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
           <div
             key={item.id}
             className={`contextual-menu-item ${
-              index === selectedIndex ? 'selected' : ''
-            } ${item.disabled ? 'disabled' : ''}`}
+              index === selectedIndex ? "selected" : ""
+            } ${item.disabled ? "disabled" : ""}`}
             role="menuitem"
             aria-disabled={item.disabled}
             onClick={() => {
               if (!item.disabled) {
                 if (item.submenu) {
-                  setSubmenuVisible(submenuVisible === item.id ? null : item.id);
+                  setSubmenuVisible(
+                    submenuVisible === item.id ? null : item.id,
+                  );
                 } else {
                   item.onClick();
                   onClose();
@@ -140,7 +143,10 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
               )}
               <span className="menu-item-label">{item.label}</span>
               {item.shortcut && (
-                <span className="menu-item-shortcut" aria-label={`Shortcut: ${item.shortcut}`}>
+                <span
+                  className="menu-item-shortcut"
+                  aria-label={`Shortcut: ${item.shortcut}`}
+                >
                   {item.shortcut}
                 </span>
               )}
@@ -150,14 +156,14 @@ const ContextualMenu: React.FC<ContextualMenuProps> = ({
                 </span>
               )}
             </div>
-            
+
             {/* Submenu */}
             {item.submenu && submenuVisible === item.id && (
               <div className="contextual-submenu" role="menu">
-                {item.submenu.map(subItem => (
+                {item.submenu.map((subItem) => (
                   <div
                     key={subItem.id}
-                    className={`contextual-menu-item ${subItem.disabled ? 'disabled' : ''}`}
+                    className={`contextual-menu-item ${subItem.disabled ? "disabled" : ""}`}
                     role="menuitem"
                     aria-disabled={subItem.disabled}
                     onClick={() => {

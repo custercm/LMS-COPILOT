@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { MediaFile, FileMetadata, ThumbnailData } from '../types/media';
-import './MediaViewer.css';
+import React, { useState, useEffect } from "react";
+import { MediaFile, FileMetadata, ThumbnailData } from "../types/media";
+import "./MediaViewer.css";
 
 interface MediaViewerProps {
   file: MediaFile;
@@ -13,7 +13,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   file,
   onClose,
   onConvert,
-  onAnalyze
+  onAnalyze,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,13 +28,13 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
     try {
       setIsLoading(true);
       setError(null);
-      
+
       // Simulate loading file content based on type
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       setIsLoading(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load file');
+      setError(err instanceof Error ? err.message : "Failed to load file");
       setIsLoading(false);
     }
   };
@@ -47,15 +47,17 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
         fileSize: file.size,
         lastModified: file.lastModified,
         mimeType: file.type,
-        dimensions: file.type.startsWith('image/') ? { width: 800, height: 600 } : undefined,
-        duration: file.type.startsWith('video/') ? 120 : undefined,
-        pageCount: file.type === 'application/pdf' ? 5 : undefined,
-        encoding: file.type.startsWith('text/') ? 'UTF-8' : undefined
+        dimensions: file.type.startsWith("image/")
+          ? { width: 800, height: 600 }
+          : undefined,
+        duration: file.type.startsWith("video/") ? 120 : undefined,
+        pageCount: file.type === "application/pdf" ? 5 : undefined,
+        encoding: file.type.startsWith("text/") ? "UTF-8" : undefined,
       };
-      
+
       setMetadata(meta);
     } catch (err) {
-      console.error('Failed to load metadata:', err);
+      console.error("Failed to load metadata:", err);
     }
   };
 
@@ -65,13 +67,21 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
         src={file.dataUrl}
         alt={file.name}
         className="image-content"
-        onError={() => setError('Failed to load image')}
+        onError={() => setError("Failed to load image")}
       />
       <div className="image-controls">
-        <button className="control-button" title="Zoom In">🔍+</button>
-        <button className="control-button" title="Zoom Out">🔍-</button>
-        <button className="control-button" title="Fit to Screen">📐</button>
-        <button className="control-button" title="Rotate">🔄</button>
+        <button className="control-button" title="Zoom In">
+          🔍+
+        </button>
+        <button className="control-button" title="Zoom Out">
+          🔍-
+        </button>
+        <button className="control-button" title="Fit to Screen">
+          📐
+        </button>
+        <button className="control-button" title="Rotate">
+          🔄
+        </button>
       </div>
     </div>
   );
@@ -87,7 +97,9 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
       </div>
       <div className="pdf-controls">
         <button className="control-button">Previous Page</button>
-        <span className="page-info">Page 1 of {metadata?.pageCount || '?'}</span>
+        <span className="page-info">
+          Page 1 of {metadata?.pageCount || "?"}
+        </span>
         <button className="control-button">Next Page</button>
       </div>
     </div>
@@ -96,17 +108,19 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   const renderCsvViewer = () => {
     // Mock CSV data for demonstration
     const csvData = [
-      ['Name', 'Age', 'City'],
-      ['John Doe', '30', 'New York'],
-      ['Jane Smith', '25', 'Los Angeles'],
-      ['Bob Johnson', '35', 'Chicago']
+      ["Name", "Age", "City"],
+      ["John Doe", "30", "New York"],
+      ["Jane Smith", "25", "Los Angeles"],
+      ["Bob Johnson", "35", "Chicago"],
     ];
 
     return (
       <div className="csv-viewer">
         <div className="csv-header">
           <h3>{file.name}</h3>
-          <p>Rows: {csvData.length - 1} | Columns: {csvData[0]?.length || 0}</p>
+          <p>
+            Rows: {csvData.length - 1} | Columns: {csvData[0]?.length || 0}
+          </p>
         </div>
         <div className="csv-table-container">
           <table className="csv-table">
@@ -154,15 +168,15 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
       );
     }
 
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith("image/")) {
       return renderImageViewer();
     }
 
-    if (file.type === 'application/pdf') {
+    if (file.type === "application/pdf") {
       return renderPdfViewer();
     }
 
-    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+    if (file.type === "text/csv" || file.name.endsWith(".csv")) {
       return renderCsvViewer();
     }
 
@@ -178,22 +192,22 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const getConvertibleFormats = () => {
-    if (file.type.startsWith('image/')) {
-      return ['PNG', 'JPEG', 'WebP', 'SVG'];
+    if (file.type.startsWith("image/")) {
+      return ["PNG", "JPEG", "WebP", "SVG"];
     }
-    if (file.type === 'application/pdf') {
-      return ['Text', 'Images', 'Word'];
+    if (file.type === "application/pdf") {
+      return ["Text", "Images", "Word"];
     }
-    if (file.type === 'text/csv') {
-      return ['JSON', 'Excel', 'XML'];
+    if (file.type === "text/csv") {
+      return ["JSON", "Excel", "XML"];
     }
     return [];
   };
@@ -208,16 +222,16 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
           </div>
           <div className="header-actions">
             {onAnalyze && (
-              <button 
-                className="action-button analyze-button" 
+              <button
+                className="action-button analyze-button"
                 onClick={onAnalyze}
                 title="Analyze file content"
               >
                 🔍 Analyze
               </button>
             )}
-            <button 
-              className="action-button close-button" 
+            <button
+              className="action-button close-button"
               onClick={onClose}
               title="Close viewer"
             >
@@ -226,9 +240,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
           </div>
         </div>
 
-        <div className="viewer-content">
-          {renderContent()}
-        </div>
+        <div className="viewer-content">{renderContent()}</div>
 
         <div className="viewer-footer">
           <div className="metadata-section">
@@ -272,7 +284,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
             <div className="conversion-section">
               <span className="conversion-label">Convert to:</span>
               <div className="conversion-buttons">
-                {getConvertibleFormats().map(format => (
+                {getConvertibleFormats().map((format) => (
                   <button
                     key={format}
                     className="conversion-button"

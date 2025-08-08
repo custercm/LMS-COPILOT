@@ -1,9 +1,9 @@
-import { LMStudioClient } from '../lmstudio/LMStudioClient';
-import { ConversationHistory } from './ConversationHistory';
-import { TaskExecutor } from './TaskExecutor';
-import { ToolRegistry } from './ToolRegistry';
-import * as FileOperations from '../tools/FileOperations';
-import { TerminalTools } from '../tools/TerminalTools';
+import { LMStudioClient } from "../lmstudio/LMStudioClient";
+import { ConversationHistory } from "./ConversationHistory";
+import { TaskExecutor } from "./TaskExecutor";
+import { ToolRegistry } from "./ToolRegistry";
+import * as FileOperations from "../tools/FileOperations";
+import { TerminalTools } from "../tools/TerminalTools";
 
 export interface AgentCapabilities {
   fileOperations: boolean;
@@ -23,7 +23,7 @@ export class AgentManager {
   constructor(lmStudioClient: LMStudioClient) {
     this.lmStudioClient = lmStudioClient;
     this.conversationHistory = new ConversationHistory();
-    
+
     // Define default agent capabilities
     const capabilities: AgentCapabilities = {
       fileOperations: true,
@@ -31,16 +31,16 @@ export class AgentManager {
       workspaceAnalysis: true,
       codeGeneration: true,
       planning: true,
-      tools: {}
+      tools: {},
     };
-    
+
     this.taskExecutor = new TaskExecutor(lmStudioClient, capabilities);
     this.toolRegistry = new ToolRegistry();
   }
 
   async processMessage(message: string): Promise<string> {
     // Add message to history
-    this.conversationHistory.addMessage('user', message);
+    this.conversationHistory.addMessage("user", message);
 
     // Check if this is a task or action request
     if (this.isTaskRequest(message)) {
@@ -49,51 +49,61 @@ export class AgentManager {
         description: message,
         execute: async () => {
           return await this.lmStudioClient.sendMessage(message);
-        }
+        },
       });
-      
+
       // Add response to history
-      this.conversationHistory.addMessage('assistant', taskResult.toString());
+      this.conversationHistory.addMessage("assistant", taskResult.toString());
       return taskResult.toString();
     } else {
       // Process with LM Studio for regular chat
       const response = await this.lmStudioClient.sendMessage(message);
 
       // Add response to history
-      this.conversationHistory.addMessage('assistant', response);
+      this.conversationHistory.addMessage("assistant", response);
 
       return response;
     }
   }
-  
+
   private isTaskRequest(message: string): boolean {
     // Detect if message contains task-related keywords
     const taskKeywords = [
-      'create', 'generate', 'build', 'implement', 'execute', 'run',
-      'file', 'folder', 'command', 'terminal', 'workspace', 'analyze'
+      "create",
+      "generate",
+      "build",
+      "implement",
+      "execute",
+      "run",
+      "file",
+      "folder",
+      "command",
+      "terminal",
+      "workspace",
+      "analyze",
     ];
-    
+
     const lowercaseMessage = message.toLowerCase();
-    return taskKeywords.some(keyword => lowercaseMessage.includes(keyword));
+    return taskKeywords.some((keyword) => lowercaseMessage.includes(keyword));
   }
 
   getConversationHistory(): ConversationHistory {
     return this.conversationHistory;
   }
-  
+
   getTaskExecutor(): TaskExecutor {
     return this.taskExecutor;
   }
-  
+
   getToolRegistry(): ToolRegistry {
     return this.toolRegistry;
   }
 
   // This function already exists in the original code
   async analyzeFileContent(filePath: string): Promise<string> {
-    const fs = require('fs');
+    const fs = require("fs");
     try {
-      const content = fs.readFileSync(filePath, 'utf8');
+      const content = fs.readFileSync(filePath, "utf8");
       return await this.lmStudioClient.analyzeWorkspace(content);
     } catch (error) {
       console.error(`Error reading file ${filePath}:`, error);
@@ -104,7 +114,7 @@ export class AgentManager {
   // This function already exists in the original code
   async executeTerminalCommand(command: string): Promise<string> {
     // Use ToolRegistry to get the terminal tool and execute command
-    const terminalTool = this.toolRegistry.getTool('terminal');
+    const terminalTool = this.toolRegistry.getTool("terminal");
     if (terminalTool) {
       return await terminalTool.execute({ command });
     } else {
@@ -117,10 +127,10 @@ export class AgentManager {
   // This function already exists in the original code
   async saveFileChanges(changes: any[]): Promise<void> {
     for (const change of changes) {
-      const fs = require('fs');
+      const fs = require("fs");
       try {
         fs.writeFileSync(change.path, change.content);
-    } catch (error) {
+      } catch (error) {
         console.error(`Error saving changes to ${change.path}:`, error);
       }
     }
@@ -135,8 +145,8 @@ export class AgentManager {
     commandPalette: true,
     contextAwareness: true,
     streamingResponses: true,
-    mediaFileSupport: true // Add new media file support capability
-    };
+    mediaFileSupport: true, // Add new media file support capability
+  };
 
   async processTask(taskDescription: string): Promise<any> {
     // Use TaskExecutor for better task handling
@@ -144,24 +154,27 @@ export class AgentManager {
       description: taskDescription,
       execute: async () => {
         return await this.lmStudioClient.executeAgentTask(taskDescription);
-      }
+      },
     };
-    
+
     const result = await this.taskExecutor.executeTask(task);
-    
+
     return {
-      type: 'response',
+      type: "response",
       content: result,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
   async trackFileChanges(filePath: string, changeDetails: any): Promise<void> {
-    console.log(`Tracking changes to ${filePath}:`, changeDetails);
+    // Track file changes for agent context
   }
 
-  async handleFileOperation(operation: 'upload' | 'download', fileInfo: { name: string, content?: string }): Promise<string> {
-    if (operation === 'upload') {
+  async handleFileOperation(
+    operation: "upload" | "download",
+    fileInfo: { name: string; content?: string },
+  ): Promise<string> {
+    if (operation === "upload") {
       return "File uploaded successfully";
     } else {
       return "File downloaded successfully";
@@ -169,23 +182,28 @@ export class AgentManager {
   }
 
   // Enhanced method to process media files
-  async processMediaFile(filePath: string, operationType: 'preview' | 'convert' | 'metadata'): Promise<any> {
+  async processMediaFile(
+    filePath: string,
+    operationType: "preview" | "convert" | "metadata",
+  ): Promise<any> {
     try {
       // Since FileOperations exports individual functions, we'll implement basic operations here
       const fileContent = await FileOperations.readFile(filePath);
-      
+
       switch (operationType) {
-        case 'preview':
-          return { type: 'preview', path: filePath, size: fileContent.length };
-        case 'metadata':
-          return { type: 'metadata', path: filePath, size: fileContent.length };
-        case 'convert':
-          return { type: 'convert', path: filePath, status: 'converted' };
+        case "preview":
+          return { type: "preview", path: filePath, size: fileContent.length };
+        case "metadata":
+          return { type: "metadata", path: filePath, size: fileContent.length };
+        case "convert":
+          return { type: "convert", path: filePath, status: "converted" };
         default:
           throw new Error(`Unknown operation: ${operationType}`);
       }
     } catch (error) {
-      return { error: `Media file processing failed: ${(error as Error).message}` };
+      return {
+        error: `Media file processing failed: ${(error as Error).message}`,
+      };
     }
   }
 
@@ -198,7 +216,12 @@ export class AgentManager {
   }
 
   // Enhanced method for batch file operations
-  async executeBatchFileOperations(operations: Array<{filePath: string, operation: 'preview' | 'convert' | 'metadata'}>): Promise<any[]> {
+  async executeBatchFileOperations(
+    operations: Array<{
+      filePath: string;
+      operation: "preview" | "convert" | "metadata";
+    }>,
+  ): Promise<any[]> {
     const results = [];
 
     for (const op of operations) {
@@ -208,7 +231,7 @@ export class AgentManager {
       } catch (error) {
         results.push({
           filePath: op.filePath,
-          error: `Batch operation failed: ${(error as Error).message}`
+          error: `Batch operation failed: ${(error as Error).message}`,
         });
       }
     }
@@ -216,75 +239,87 @@ export class AgentManager {
     return results;
   }
 
-  private async sendTimestampedMessageToClient(message: string, timestamp?: Date): Promise<void> {
-    console.log(`[${timestamp || new Date()}] ${message}`);
+  private async sendTimestampedMessageToClient(
+    message: string,
+    timestamp?: Date,
+  ): Promise<void> {
+    // Send timestamped message to client
   }
 
   private async sendMessageToClient(message: string): Promise<void> {
-    console.log("Sending message to client:", message);
+    // Send message to client
   }
-  
+
   // Test methods for integration testing of agent functionality
-  public async testProcessTask(taskDescription: string): Promise<{success: boolean, result?: any}> {
+  public async testProcessTask(
+    taskDescription: string,
+  ): Promise<{ success: boolean; result?: any }> {
     try {
       const result = await this.processTask(taskDescription);
       return { success: true, result };
     } catch (error) {
-      return { 
+      return {
         success: false,
-        result: error instanceof Error ? error.message : 'Unknown error'
+        result: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
-  public async testAnalyzeWorkspace(workspaceStructure: string): Promise<{success: boolean, result?: string}> {
+  public async testAnalyzeWorkspace(
+    workspaceStructure: string,
+  ): Promise<{ success: boolean; result?: string }> {
     try {
       const result = await this.analyzeWorkspace(workspaceStructure);
       return { success: true, result };
     } catch (error) {
-      return { 
+      return {
         success: false,
-        result: error instanceof Error ? error.message : 'Unknown error'
+        result: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
-  public async testExecuteBatchFileOperations(operations: Array<{filePath: string, operation: 'preview' | 'convert' | 'metadata'}>): Promise<{success: boolean, results?: any[]}> {
+  public async testExecuteBatchFileOperations(
+    operations: Array<{
+      filePath: string;
+      operation: "preview" | "convert" | "metadata";
+    }>,
+  ): Promise<{ success: boolean; results?: any[] }> {
     try {
       const results = await this.executeBatchFileOperations(operations);
       return { success: true, results };
     } catch (error) {
-      return { 
+      return {
         success: false,
-        results: error instanceof Error ? [error.message] : ['Unknown error']
+        results: error instanceof Error ? [error.message] : ["Unknown error"],
       };
     }
   }
 
   // Add test methods here
-  public async runAgentTests(): Promise<{passed: number, failed: number}> {
+  public async runAgentTests(): Promise<{ passed: number; failed: number }> {
     let passed = 0;
     let failed = 0;
 
     try {
       // Test analyzeFileContent method
-      const fileAnalysis = await this.analyzeFileContent('test-file.ts');
-      if (fileAnalysis && typeof fileAnalysis === 'string') {
+      const fileAnalysis = await this.analyzeFileContent("test-file.ts");
+      if (fileAnalysis && typeof fileAnalysis === "string") {
         passed++;
       } else {
         failed++;
       }
 
-      // Test executeTerminalCommand method  
+      // Test executeTerminalCommand method
       const terminalOutput = await this.executeTerminalCommand('echo "test"');
-      if (terminalOutput && typeof terminalOutput === 'string') {
+      if (terminalOutput && typeof terminalOutput === "string") {
         passed++;
       } else {
         failed++;
       }
 
       // Test processTask method
-      const taskResult = await this.processTask('Test task description');
+      const taskResult = await this.processTask("Test task description");
       if (taskResult) {
         passed++;
       } else {
@@ -293,31 +328,41 @@ export class AgentManager {
 
       return { passed, failed };
     } catch (error) {
-      console.error('Agent tests failed:', error);
+      console.error("Agent tests failed:", error);
       failed++;
       return { passed, failed };
     }
   }
 
   // Enhanced method for batch file operations
-  async handleBatchFileOperations(operations: Array<{type: 'upload' | 'download', fileInfo: { name: string, content?: string }}>): Promise<string[]> {
+  async handleBatchFileOperations(
+    operations: Array<{
+      type: "upload" | "download";
+      fileInfo: { name: string; content?: string };
+    }>,
+  ): Promise<string[]> {
     const results = [];
-    
+
     for (const operation of operations) {
       try {
-        const result = await this.handleFileOperation(operation.type, operation.fileInfo);
+        const result = await this.handleFileOperation(
+          operation.type,
+          operation.fileInfo,
+        );
         results.push(result);
       } catch (error) {
         console.error(`Batch operation failed: ${operation.type}`, error);
         results.push(`Error in ${operation.type}: ${(error as Error).message}`);
       }
     }
-    
+
     return results;
   }
 
   // Test methods for integration testing of agent functionality
-  public async testAnalyzeFileContent(filePath: string): Promise<{success: boolean, content?: string}> {
+  public async testAnalyzeFileContent(
+    filePath: string,
+  ): Promise<{ success: boolean; content?: string }> {
     try {
       const result = await this.analyzeFileContent(filePath);
       return { success: true, content: result };
@@ -326,7 +371,9 @@ export class AgentManager {
     }
   }
 
-  public async testExecuteTerminalCommand(command: string): Promise<{success: boolean, output?: string}> {
+  public async testExecuteTerminalCommand(
+    command: string,
+  ): Promise<{ success: boolean; output?: string }> {
     try {
       const result = await this.executeTerminalCommand(command);
       return { success: true, output: result };
@@ -335,7 +382,9 @@ export class AgentManager {
     }
   }
 
-  public async testSaveFileChanges(changes: any[]): Promise<{success: boolean}> {
+  public async testSaveFileChanges(
+    changes: any[],
+  ): Promise<{ success: boolean }> {
     try {
       await this.saveFileChanges(changes);
       return { success: true };
@@ -345,22 +394,24 @@ export class AgentManager {
   }
 
   // Add performance benchmark method
-  public async runPerformanceBenchmark(taskDescription: string): Promise<{duration: number, memoryUsage?: number}> {
+  public async runPerformanceBenchmark(
+    taskDescription: string,
+  ): Promise<{ duration: number; memoryUsage?: number }> {
     const startTime = Date.now();
-    
+
     try {
       await this.processTask(taskDescription);
-      
+
       const endTime = Date.now();
-      return { 
+      return {
         duration: endTime - startTime,
-        memoryUsage: undefined
+        memoryUsage: undefined,
       };
     } catch (error) {
       const endTime = Date.now();
-      return { 
+      return {
         duration: endTime - startTime,
-        memoryUsage: undefined
+        memoryUsage: undefined,
       };
     }
   }

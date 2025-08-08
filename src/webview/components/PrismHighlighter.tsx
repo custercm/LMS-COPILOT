@@ -1,9 +1,12 @@
 // React component for lazy-loaded syntax highlighting
-import React from 'react';
-import { highlightCode } from '../utils/prismLoader';
+import React from "react";
+import { highlightCode } from "../utils/prismLoader";
 
-const PrismHighlighter: React.FC<{ code: string; language: string }> = ({ code, language }) => {
-  const [highlightedCode, setHighlightedCode] = React.useState<string>('');
+const PrismHighlighter: React.FC<{ code: string; language: string }> = ({
+  code,
+  language,
+}) => {
+  const [highlightedCode, setHighlightedCode] = React.useState<string>("");
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -42,7 +45,7 @@ const PrismHighlighter: React.FC<{ code: string; language: string }> = ({ code, 
 
   return (
     <pre className={`language-${language}`}>
-      <code 
+      <code
         className={`language-${language}`}
         dangerouslySetInnerHTML={{ __html: highlightedCode }}
       />

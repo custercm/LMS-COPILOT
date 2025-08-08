@@ -1,6 +1,6 @@
 // Add test utilities to existing message parsing functions
 
-import { marked } from 'marked';
+import { marked } from "marked";
 
 // Configure marked for safe rendering
 marked.setOptions({
@@ -16,24 +16,26 @@ export function parseMessageContent(content: string): string {
     // Process file references in markdown text
     return marked(content) as string;
   } catch (error) {
-    console.error('Error parsing markdown:', error);
+    console.error("Error parsing markdown:", error);
     return content;
   }
 }
 
 // Extract code blocks from content
-function extractCodeBlocks(content: string): Array<{code: string, language: string}> {
+function extractCodeBlocks(
+  content: string,
+): Array<{ code: string; language: string }> {
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)\n```/g;
-  const blocks: Array<{code: string, language: string}> = [];
+  const blocks: Array<{ code: string; language: string }> = [];
   let match;
-  
+
   while ((match = codeBlockRegex.exec(content)) !== null) {
     blocks.push({
-      language: match[1] || 'text',
-      code: match[2]
+      language: match[1] || "text",
+      code: match[2],
     });
   }
-  
+
   return blocks;
 }
 
@@ -69,7 +71,7 @@ const test = "content";
 `;
 
 export const validateCodeBlockExtraction = (content: string) => {
-  // Check for both inline code (```code```) and code blocks 
+  // Check for both inline code (```code```) and code blocks
   const hasInlineCode = /```[\w\s]*```/.test(content);
   const codeBlocks = extractCodeBlocks(content);
   return hasInlineCode || codeBlocks.length > 0;
@@ -80,5 +82,5 @@ export {
   extractCodeBlocks,
   hasCodeBlocks,
   extractFilePaths,
-  createAccessibleFilePath
+  createAccessibleFilePath,
 };

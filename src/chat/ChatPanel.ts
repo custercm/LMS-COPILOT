@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: number;
 }
@@ -27,14 +27,14 @@ export class ChatPanel {
   }
 
   // Add new message to chat display
-  addMessage(role: 'user' | 'assistant', content: string): void {
+  addMessage(role: "user" | "assistant", content: string): void {
     const message: Message = { role, content, timestamp: Date.now() };
     this.messages.push(message);
-    
+
     // Update webview with new message
     this.webview.postMessage({
-      command: 'addMessage',
-      message: message
+      command: "addMessage",
+      message: message,
     });
   }
 
@@ -42,7 +42,7 @@ export class ChatPanel {
   clearMessages(): void {
     this.messages = [];
     this.webview.postMessage({
-      command: 'clearMessages'
+      command: "clearMessages",
     });
   }
 
@@ -201,9 +201,9 @@ export class ChatPanel {
 
   // Setup message handling from webview
   private setupMessageHandling(): void {
-    this.webview.onDidReceiveMessage(async message => {
+    this.webview.onDidReceiveMessage(async (message) => {
       switch (message.command) {
-        case 'sendMessage':
+        case "sendMessage":
           // Call the callback if it's set
           if (this.onMessageCallback) {
             await this.onMessageCallback(message.text);

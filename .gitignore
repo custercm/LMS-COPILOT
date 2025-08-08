@@ -57,3 +57,18 @@ ehthumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Build and cache directories
+.webpack-cache/
+.venv/
+
+# Test artifacts and backup files
+backup-*/
+validate-*.js
+
+# Python environments (if any)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python

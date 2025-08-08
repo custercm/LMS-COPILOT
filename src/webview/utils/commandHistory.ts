@@ -13,8 +13,9 @@ interface CommandFavorite {
 }
 
 export class CommandHistoryManager {
-  private static readonly STORAGE_KEY_HISTORY = 'lms-copilot-command-history';
-  private static readonly STORAGE_KEY_FAVORITES = 'lms-copilot-command-favorites';
+  private static readonly STORAGE_KEY_HISTORY = "lms-copilot-command-history";
+  private static readonly STORAGE_KEY_FAVORITES =
+    "lms-copilot-command-favorites";
   private static readonly MAX_HISTORY_SIZE = 100;
   private static readonly MAX_FAVORITES_SIZE = 20;
 
@@ -24,7 +25,7 @@ export class CommandHistoryManager {
       const stored = localStorage.getItem(this.STORAGE_KEY_HISTORY);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('Failed to load command history:', error);
+      console.error("Failed to load command history:", error);
       return [];
     }
   }
@@ -34,7 +35,7 @@ export class CommandHistoryManager {
     try {
       const history = this.getHistory();
       const existingIndex = history.findIndex(
-        item => item.command === command && item.args === args
+        (item) => item.command === command && item.args === args,
       );
 
       if (existingIndex >= 0) {
@@ -47,7 +48,7 @@ export class CommandHistoryManager {
           command,
           args,
           timestamp: Date.now(),
-          executionCount: 1
+          executionCount: 1,
         });
       }
 
@@ -58,14 +59,14 @@ export class CommandHistoryManager {
 
       localStorage.setItem(this.STORAGE_KEY_HISTORY, JSON.stringify(history));
     } catch (error) {
-      console.error('Failed to save command to history:', error);
+      console.error("Failed to save command to history:", error);
     }
   }
 
   // Get recent commands (sorted by recency and frequency)
   static getRecentCommands(limit: number = 10): CommandHistoryItem[] {
     const history = this.getHistory();
-    
+
     // Sort by a combination of recency and frequency
     return history
       .sort((a, b) => {
@@ -82,7 +83,7 @@ export class CommandHistoryManager {
     const ageInDays = (now - item.timestamp) / (1000 * 60 * 60 * 24);
     const recencyScore = Math.max(0, 10 - ageInDays); // Score decreases with age
     const frequencyScore = Math.min(item.executionCount, 10); // Cap at 10
-    
+
     return recencyScore * 0.7 + frequencyScore * 0.3;
   }
 
@@ -92,22 +93,26 @@ export class CommandHistoryManager {
       const stored = localStorage.getItem(this.STORAGE_KEY_FAVORITES);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('Failed to load command favorites:', error);
+      console.error("Failed to load command favorites:", error);
       return [];
     }
   }
 
   // Add command to favorites
-  static addToFavorites(command: string, args?: string, displayName?: string): boolean {
+  static addToFavorites(
+    command: string,
+    args?: string,
+    displayName?: string,
+  ): boolean {
     try {
       const favorites = this.getFavorites();
       const fullCommand = args ? `${command} ${args}` : command;
-      
+
       // Check if already in favorites
       const exists = favorites.some(
-        fav => fav.command === command && fav.args === args
+        (fav) => fav.command === command && fav.args === args,
       );
-      
+
       if (exists) {
         return false; // Already in favorites
       }
@@ -116,7 +121,7 @@ export class CommandHistoryManager {
         command,
         args,
         displayName: displayName || fullCommand,
-        addedAt: Date.now()
+        addedAt: Date.now(),
       });
 
       // Trim to max size
@@ -124,10 +129,13 @@ export class CommandHistoryManager {
         favorites.shift(); // Remove oldest
       }
 
-      localStorage.setItem(this.STORAGE_KEY_FAVORITES, JSON.stringify(favorites));
+      localStorage.setItem(
+        this.STORAGE_KEY_FAVORITES,
+        JSON.stringify(favorites),
+      );
       return true;
     } catch (error) {
-      console.error('Failed to add command to favorites:', error);
+      console.error("Failed to add command to favorites:", error);
       return false;
     }
   }
@@ -137,16 +145,19 @@ export class CommandHistoryManager {
     try {
       const favorites = this.getFavorites();
       const filtered = favorites.filter(
-        fav => !(fav.command === command && fav.args === args)
+        (fav) => !(fav.command === command && fav.args === args),
       );
-      
+
       if (filtered.length !== favorites.length) {
-        localStorage.setItem(this.STORAGE_KEY_FAVORITES, JSON.stringify(filtered));
+        localStorage.setItem(
+          this.STORAGE_KEY_FAVORITES,
+          JSON.stringify(filtered),
+        );
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Failed to remove command from favorites:', error);
+      console.error("Failed to remove command from favorites:", error);
       return false;
     }
   }
@@ -154,15 +165,17 @@ export class CommandHistoryManager {
   // Check if command is in favorites
   static isFavorite(command: string, args?: string): boolean {
     const favorites = this.getFavorites();
-    return favorites.some(fav => fav.command === command && fav.args === args);
+    return favorites.some(
+      (fav) => fav.command === command && fav.args === args,
+    );
   }
 
   // Search command history
   static searchHistory(query: string): CommandHistoryItem[] {
     const history = this.getHistory();
     const queryLower = query.toLowerCase();
-    
-    return history.filter(item => {
+
+    return history.filter((item) => {
       const commandMatch = item.command.toLowerCase().includes(queryLower);
       const argsMatch = item.args?.toLowerCase().includes(queryLower) || false;
       return commandMatch || argsMatch;
@@ -170,31 +183,37 @@ export class CommandHistoryManager {
   }
 
   // Get command suggestions based on current input
-  static getCommandSuggestions(input: string): (CommandHistoryItem | CommandFavorite)[] {
+  static getCommandSuggestions(
+    input: string,
+  ): (CommandHistoryItem | CommandFavorite)[] {
     const suggestions: (CommandHistoryItem | CommandFavorite)[] = [];
-    
+
     // Add favorites first
     const favorites = this.getFavorites();
-    const matchingFavorites = favorites.filter(fav => {
+    const matchingFavorites = favorites.filter((fav) => {
       const fullCommand = fav.args ? `${fav.command} ${fav.args}` : fav.command;
       return fullCommand.toLowerCase().includes(input.toLowerCase());
     });
     suggestions.push(...matchingFavorites);
-    
+
     // Add recent commands
     const recent = this.getRecentCommands(10);
-    const matchingRecent = recent.filter(item => {
-      const fullCommand = item.args ? `${item.command} ${item.args}` : item.command;
-      const alreadyAdded = suggestions.some(s => {
-        if ('displayName' in s) {
+    const matchingRecent = recent.filter((item) => {
+      const fullCommand = item.args
+        ? `${item.command} ${item.args}`
+        : item.command;
+      const alreadyAdded = suggestions.some((s) => {
+        if ("displayName" in s) {
           return s.command === item.command && s.args === item.args;
         }
         return false;
       });
-      return !alreadyAdded && fullCommand.toLowerCase().includes(input.toLowerCase());
+      return (
+        !alreadyAdded && fullCommand.toLowerCase().includes(input.toLowerCase())
+      );
     });
     suggestions.push(...matchingRecent);
-    
+
     return suggestions.slice(0, 8); // Limit to 8 suggestions
   }
 
@@ -203,7 +222,7 @@ export class CommandHistoryManager {
     try {
       localStorage.removeItem(this.STORAGE_KEY_HISTORY);
     } catch (error) {
-      console.error('Failed to clear command history:', error);
+      console.error("Failed to clear command history:", error);
     }
   }
 
@@ -212,7 +231,7 @@ export class CommandHistoryManager {
     try {
       localStorage.removeItem(this.STORAGE_KEY_FAVORITES);
     } catch (error) {
-      console.error('Failed to clear command favorites:', error);
+      console.error("Failed to clear command favorites:", error);
     }
   }
 
@@ -221,7 +240,7 @@ export class CommandHistoryManager {
     const data = {
       history: this.getHistory(),
       favorites: this.getFavorites(),
-      exportDate: new Date().toISOString()
+      exportDate: new Date().toISOString(),
     };
     return JSON.stringify(data, null, 2);
   }
@@ -230,18 +249,24 @@ export class CommandHistoryManager {
   static importData(jsonData: string): boolean {
     try {
       const data = JSON.parse(jsonData);
-      
+
       if (data.history && Array.isArray(data.history)) {
-        localStorage.setItem(this.STORAGE_KEY_HISTORY, JSON.stringify(data.history));
+        localStorage.setItem(
+          this.STORAGE_KEY_HISTORY,
+          JSON.stringify(data.history),
+        );
       }
-      
+
       if (data.favorites && Array.isArray(data.favorites)) {
-        localStorage.setItem(this.STORAGE_KEY_FAVORITES, JSON.stringify(data.favorites));
+        localStorage.setItem(
+          this.STORAGE_KEY_FAVORITES,
+          JSON.stringify(data.favorites),
+        );
       }
-      
+
       return true;
     } catch (error) {
-      console.error('Failed to import command data:', error);
+      console.error("Failed to import command data:", error);
       return false;
     }
   }
@@ -255,20 +280,26 @@ export class CommandHistoryManager {
   } {
     const history = this.getHistory();
     const favorites = this.getFavorites();
-    
-    const totalExecutions = history.reduce((sum, item) => sum + item.executionCount, 0);
-    const mostUsed = history.reduce((max, item) => 
-      item.executionCount > (max?.executionCount || 0) ? item : max, 
-      null as CommandHistoryItem | null
+
+    const totalExecutions = history.reduce(
+      (sum, item) => sum + item.executionCount,
+      0,
     );
-    
+    const mostUsed = history.reduce(
+      (max, item) =>
+        item.executionCount > (max?.executionCount || 0) ? item : max,
+      null as CommandHistoryItem | null,
+    );
+
     return {
       totalCommands: history.length,
       favoriteCommands: favorites.length,
-      mostUsedCommand: mostUsed ? 
-        (mostUsed.args ? `${mostUsed.command} ${mostUsed.args}` : mostUsed.command) : 
-        null,
-      totalExecutions
+      mostUsedCommand: mostUsed
+        ? mostUsed.args
+          ? `${mostUsed.command} ${mostUsed.args}`
+          : mostUsed.command
+        : null,
+      totalExecutions,
     };
   }
 }

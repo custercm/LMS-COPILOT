@@ -1,4 +1,4 @@
-import { LMStudioClient, LMStudioConfig } from './LMStudioClient';
+import { LMStudioClient, LMStudioConfig } from "./LMStudioClient";
 
 export class ModelManager {
   private client: LMStudioClient;
@@ -6,7 +6,7 @@ export class ModelManager {
 
   constructor(config?: Partial<LMStudioConfig>) {
     this.client = new LMStudioClient(config);
-    this.currentModel = config?.model || 'llama3';
+    this.currentModel = config?.model || "llama3";
   }
 
   async getAvailableModels(): Promise<string[]> {

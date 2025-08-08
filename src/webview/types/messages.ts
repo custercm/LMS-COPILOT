@@ -1,4 +1,4 @@
-import { FileReference } from './api';
+import { FileReference } from "./api";
 
 interface BaseMessage {
   id: string;
@@ -8,11 +8,11 @@ interface BaseMessage {
 }
 
 export interface UserMessage extends BaseMessage {
-  role: 'user';
+  role: "user";
 }
 
 export interface AssistantMessage extends BaseMessage {
-  role: 'assistant';
+  role: "assistant";
   streaming?: boolean;
 }
 
@@ -21,7 +21,7 @@ export type ChatMessage = UserMessage | AssistantMessage;
 // Legacy compatibility for existing components
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: number;
   fileReferences?: FileReference[];

@@ -1,7 +1,7 @@
-import { FileChange } from './changes';
+import { FileChange } from "./changes";
 
 interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
 }
 
@@ -21,52 +21,52 @@ export interface RevertChangeRequest {
 
 // Define message commands sent between webview and extension
 export interface SendMessageCommand {
-  command: 'sendMessage';
+  command: "sendMessage";
   text: string;
 }
 
 export interface CommandMessage {
-  type: 'command';
+  type: "command";
   payload: any;
 }
 
 export interface ApplyChangeCommand {
-  command: 'applyChange';
+  command: "applyChange";
   changeId: string;
   changes: FileChange[];
 }
 
 export interface RunCodeCommand {
-  command: 'runCode';
+  command: "runCode";
   code: string;
   changeId?: string;
 }
 
 export interface EditInEditorCommand {
-  command: 'editInEditor';
+  command: "editInEditor";
   content: string;
   changeId?: string;
 }
 
 export interface RegenerateResponseCommand {
-  command: 'regenerateResponse';
+  command: "regenerateResponse";
   changeId?: string;
 }
 
 export interface OpenFileCommand {
-  command: 'openFile';
+  command: "openFile";
   filePath: string;
   lineNumber?: number;
 }
 
 export interface PreviewFileCommand {
-  command: 'previewFile';
+  command: "previewFile";
   filePath: string;
   requestId: string;
 }
 
 export interface FileUploadCommand {
-  command: 'fileUpload';
+  command: "fileUpload";
   files: Array<{
     name: string;
     content: string;
@@ -77,18 +77,18 @@ export interface FileUploadCommand {
 }
 
 export interface CreateFileCommand {
-  command: 'createFile';
+  command: "createFile";
   filePath: string;
   content: string;
   requestId: string;
 }
 
 export interface WebviewReadyCommand {
-  command: 'webviewReady';
+  command: "webviewReady";
 }
 
 export interface PerformanceTestCommand {
-  type: 'performance-test';
+  type: "performance-test";
   payload: any;
 }
 
@@ -98,11 +98,11 @@ export interface FileReference {
   column?: number;
 }
 
-export type WebviewCommand = 
-  | SendMessageCommand 
-  | ApplyChangeCommand 
-  | RunCodeCommand 
-  | EditInEditorCommand 
+export type WebviewCommand =
+  | SendMessageCommand
+  | ApplyChangeCommand
+  | RunCodeCommand
+  | EditInEditorCommand
   | RegenerateResponseCommand
   | OpenFileCommand
   | PreviewFileCommand
@@ -114,10 +114,10 @@ export type WebviewCommand =
 
 // Messages received from extension
 export interface AddMessageEvent {
-  command: 'addMessage';
+  command: "addMessage";
   message: {
     id: string;
-    role: 'user' | 'assistant';
+    role: "user" | "assistant";
     content: string;
     timestamp: number;
     fileReferences?: FileReference[];
@@ -125,34 +125,34 @@ export interface AddMessageEvent {
 }
 
 export interface ShowTypingIndicatorEvent {
-  command: 'showTypingIndicator';
+  command: "showTypingIndicator";
 }
 
 export interface HideTypingIndicatorEvent {
-  command: 'hideTypingIndicator';
+  command: "hideTypingIndicator";
 }
 
 export interface HandleErrorEvent {
-  command: 'handleError';
+  command: "handleError";
   message: string;
 }
 
 export interface AddFileReferenceEvent {
-  command: 'addFileReference';
+  command: "addFileReference";
   reference: FileReference;
 }
 
 export interface FilePreviewResponseEvent {
-  command: 'filePreviewResponse';
+  command: "filePreviewResponse";
   requestId: string;
   content?: string;
   error?: string;
 }
 
-export type ExtensionMessage = 
-  | AddMessageEvent 
-  | ShowTypingIndicatorEvent 
-  | HideTypingIndicatorEvent 
+export type ExtensionMessage =
+  | AddMessageEvent
+  | ShowTypingIndicatorEvent
+  | HideTypingIndicatorEvent
   | HandleErrorEvent
   | AddFileReferenceEvent
   | FilePreviewResponseEvent;

@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import MessageItem from './MessageItem';
-import { Message } from '../types/messages';
-import { FileReference } from '../types/api';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import MessageItem from "./MessageItem";
+import { Message } from "../types/messages";
+import { FileReference } from "../types/api";
 
 interface MessageListProps {
   messages: Message[];
@@ -16,22 +22,25 @@ interface MessageListProps {
 const MemoizedMessageItem = React.memo(MessageItem);
 
 // Test helper functions for integration testing
-export const createTestMessageItem = (content: string, role: 'user' | 'assistant') => ({
+export const createTestMessageItem = (
+  content: string,
+  role: "user" | "assistant",
+) => ({
   id: Date.now().toString(),
   content,
   role,
-  timestamp: Date.now()
+  timestamp: Date.now(),
 });
 
 export const createEmptyMessagesArray = () => [];
 
-function MessageList({ 
-  messages, 
+function MessageList({
+  messages,
   fileReferences = [],
   onOpenFile,
   onPreviewFile,
   onContextMenu,
-  isHovered = false
+  isHovered = false,
 }: MessageListProps) {
   const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
   const [startIndex, setStartIndex] = useState(0);
@@ -39,33 +48,46 @@ function MessageList({
   const messageListRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-  
+
   // Enhanced virtualization constants
   const MESSAGE_HEIGHT = 80; // Dynamic height calculation
   const BUFFER_SIZE = 10; // Increased buffer for smoother scrolling
   const SCROLL_DEBOUNCE_MS = 16; // 60fps debouncing
 
   // Memoized total height calculation
-  const totalHeight = useMemo(() => messages.length * MESSAGE_HEIGHT, [messages.length]);
+  const totalHeight = useMemo(
+    () => messages.length * MESSAGE_HEIGHT,
+    [messages.length],
+  );
 
   // Optimized visible range calculation with memoization
-  const calculateVisibleRange = useCallback((scrollTop: number, containerHeight: number) => {
-    const newStartIndex = Math.max(0, Math.floor(scrollTop / MESSAGE_HEIGHT) - BUFFER_SIZE);
-    const visibleCount = Math.ceil(containerHeight / MESSAGE_HEIGHT) + (BUFFER_SIZE * 2);
-    const endIndex = Math.min(messages.length, newStartIndex + visibleCount);
-    
-    return { startIndex: newStartIndex, endIndex };
-  }, [messages.length]);
+  const calculateVisibleRange = useCallback(
+    (scrollTop: number, containerHeight: number) => {
+      const newStartIndex = Math.max(
+        0,
+        Math.floor(scrollTop / MESSAGE_HEIGHT) - BUFFER_SIZE,
+      );
+      const visibleCount =
+        Math.ceil(containerHeight / MESSAGE_HEIGHT) + BUFFER_SIZE * 2;
+      const endIndex = Math.min(messages.length, newStartIndex + visibleCount);
+
+      return { startIndex: newStartIndex, endIndex };
+    },
+    [messages.length],
+  );
 
   // Debounced scroll handler for better performance
   const handleScroll = useCallback(() => {
     if (!messageListRef.current) return;
-    
+
     const containerHeight = messageListRef.current.clientHeight;
     const scrollTop = messageListRef.current.scrollTop || 0;
-    
-    const { startIndex: newStartIndex, endIndex } = calculateVisibleRange(scrollTop, containerHeight);
-    
+
+    const { startIndex: newStartIndex, endIndex } = calculateVisibleRange(
+      scrollTop,
+      containerHeight,
+    );
+
     if (newStartIndex !== startIndex) {
       setStartIndex(newStartIndex);
       setVisibleMessages(messages.slice(newStartIndex, endIndex));
@@ -97,10 +119,12 @@ function MessageList({
       }
     };
 
-    scrollElement.addEventListener('scroll', throttledScrollHandler, { passive: true });
-    
+    scrollElement.addEventListener("scroll", throttledScrollHandler, {
+      passive: true,
+    });
+
     return () => {
-      scrollElement.removeEventListener('scroll', throttledScrollHandler);
+      scrollElement.removeEventListener("scroll", throttledScrollHandler);
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
@@ -110,11 +134,14 @@ function MessageList({
   // Initial load and resize handling
   useEffect(() => {
     if (!messageListRef.current) return;
-    
+
     const containerHeight = messageListRef.current.clientHeight;
     const scrollTop = messageListRef.current.scrollTop || 0;
-    
-    const { startIndex: newStartIndex, endIndex } = calculateVisibleRange(scrollTop, containerHeight);
+
+    const { startIndex: newStartIndex, endIndex } = calculateVisibleRange(
+      scrollTop,
+      containerHeight,
+    );
     setStartIndex(newStartIndex);
     setVisibleMessages(messages.slice(newStartIndex, endIndex));
   }, [messages, calculateVisibleRange]);
@@ -133,9 +160,9 @@ function MessageList({
       },
       {
         root: messageListRef.current,
-        rootMargin: '50px',
-        threshold: 0.1
-      }
+        rootMargin: "50px",
+        threshold: 0.1,
+      },
     );
 
     return () => {
@@ -154,9 +181,10 @@ function MessageList({
 
   // Effect to scroll to bottom on new messages
   useEffect(() => {
-    const shouldAutoScroll = messageListRef.current && 
-      (messageListRef.current.scrollTop + messageListRef.current.clientHeight) >= 
-      (totalHeight - MESSAGE_HEIGHT * 2);
+    const shouldAutoScroll =
+      messageListRef.current &&
+      messageListRef.current.scrollTop + messageListRef.current.clientHeight >=
+        totalHeight - MESSAGE_HEIGHT * 2;
 
     if (shouldAutoScroll) {
       scrollToBottom();
@@ -189,17 +217,17 @@ function MessageList({
   };
 
   return (
-    <div 
+    <div
       ref={messageListRef}
-      className={`message-list ${isHovered ? 'hovered' : ''} ${isScrolling ? 'scrolling' : ''}`}
+      className={`message-list ${isHovered ? "hovered" : ""} ${isScrolling ? "scrolling" : ""}`}
     >
       {/* Virtualized message rendering with performance optimizations */}
-      <div 
-        style={{ 
-          height: `${totalHeight}px`, 
-          position: 'relative',
+      <div
+        style={{
+          height: `${totalHeight}px`,
+          position: "relative",
           // Optimize painting during scroll
-          willChange: isScrolling ? 'transform' : 'auto'
+          willChange: isScrolling ? "transform" : "auto",
         }}
       >
         {visibleMessages.map((message, index) => {
@@ -209,13 +237,13 @@ function MessageList({
             <div
               key={message.id}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 top: `${actualIndex * MESSAGE_HEIGHT}px`,
-                width: '100%',
+                width: "100%",
                 height: `${MESSAGE_HEIGHT}px`,
                 // GPU acceleration for smooth scrolling
                 transform: `translateZ(0)`,
-                backfaceVisibility: 'hidden'
+                backfaceVisibility: "hidden",
               }}
               ref={(el) => {
                 if (el && observerRef.current) {
@@ -223,11 +251,13 @@ function MessageList({
                 }
               }}
             >
-              <MemoizedMessageItem 
+              <MemoizedMessageItem
                 message={message}
                 onOpenFile={onOpenFile}
                 onPreviewFile={onPreviewFile}
-                onContextMenu={(event: React.MouseEvent) => onContextMenu?.(event, message.id)}
+                onContextMenu={(event: React.MouseEvent) =>
+                  onContextMenu?.(event, message.id)
+                }
               />
             </div>
           );

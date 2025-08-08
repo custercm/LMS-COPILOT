@@ -1,33 +1,36 @@
-import React from 'react';
-import '../styles/SkeletonLoader.css';
+import React from "react";
+import "../styles/SkeletonLoader.css";
 
 interface SkeletonLoaderProps {
-  variant?: 'text' | 'rectangular' | 'circular' | 'message' | 'code';
+  variant?: "text" | "rectangular" | "circular" | "message" | "code";
   width?: string | number;
   height?: string | number;
   lines?: number;
-  animation?: 'pulse' | 'wave' | 'none';
+  animation?: "pulse" | "wave" | "none";
   className?: string;
 }
 
 const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
-  variant = 'text',
+  variant = "text",
   width,
   height,
   lines = 1,
-  animation = 'pulse',
-  className = ''
+  animation = "pulse",
+  className = "",
 }) => {
   const getSkeletonStyle = () => {
     const style: React.CSSProperties = {};
-    if (width) style.width = typeof width === 'number' ? `${width}px` : width;
-    if (height) style.height = typeof height === 'number' ? `${height}px` : height;
+    if (width) style.width = typeof width === "number" ? `${width}px` : width;
+    if (height)
+      style.height = typeof height === "number" ? `${height}px` : height;
     return style;
   };
 
-  if (variant === 'message') {
+  if (variant === "message") {
     return (
-      <div className={`skeleton-loader skeleton-message ${animation} ${className}`}>
+      <div
+        className={`skeleton-loader skeleton-message ${animation} ${className}`}
+      >
         <div className="skeleton-avatar" />
         <div className="skeleton-message-content">
           <div className="skeleton-line short" />
@@ -38,9 +41,11 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
     );
   }
 
-  if (variant === 'code') {
+  if (variant === "code") {
     return (
-      <div className={`skeleton-loader skeleton-code ${animation} ${className}`}>
+      <div
+        className={`skeleton-loader skeleton-code ${animation} ${className}`}
+      >
         <div className="skeleton-code-header">
           <div className="skeleton-line short" />
           <div className="skeleton-copy-button" />
@@ -49,7 +54,9 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={index} className="skeleton-code-line">
               <div className="skeleton-line-number" />
-              <div className={`skeleton-line ${index % 3 === 0 ? 'short' : index % 3 === 1 ? 'medium' : ''}`} />
+              <div
+                className={`skeleton-line ${index % 3 === 0 ? "short" : index % 3 === 1 ? "medium" : ""}`}
+              />
             </div>
           ))}
         </div>
@@ -64,7 +71,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           <div
             key={index}
             className={`skeleton-line ${variant} ${animation} ${
-              index === lines - 1 ? 'short' : ''
+              index === lines - 1 ? "short" : ""
             }`}
             style={getSkeletonStyle()}
           />

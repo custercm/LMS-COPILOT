@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
-import { LMStudioClient } from '../lmstudio/LMStudioClient';
-import { ChatPanel } from '../chat/ChatPanel';
-import { MessageHandler } from '../chat/MessageHandler';
-import { AgentManager } from '../agent/AgentManager';
+import * as vscode from "vscode";
+import { LMStudioClient } from "../lmstudio/LMStudioClient";
+import { ChatPanel } from "../chat/ChatPanel";
+import { MessageHandler } from "../chat/MessageHandler";
+import { AgentManager } from "../agent/AgentManager";
 
 interface PanelConfiguration {
   title: string;
@@ -45,8 +45,8 @@ class PanelManager {
       vscode.ViewColumn.One,
       {
         enableScripts: true,
-        retainContextWhenHidden: true
-      }
+        retainContextWhenHidden: true,
+      },
     );
 
     this.chatPanel = new ChatPanel(this.currentPanel.webview);
@@ -55,22 +55,27 @@ class PanelManager {
     if (this.messageHandler) {
       this.chatPanel.setMessageHandler(async (text: string) => {
         try {
-          await this.messageHandler!.handleMessage(text, 'panel');
+          await this.messageHandler!.handleMessage(text, "panel");
         } catch (error) {
-          this.chatPanel!.addMessage('assistant', `Error: ${(error as Error).message}`);
+          this.chatPanel!.addMessage(
+            "assistant",
+            `Error: ${(error as Error).message}`,
+          );
         }
       });
 
       // Wire AFTER setting up the callback
       this.messageHandler.setChatPanel(this.chatPanel);
     } else {
-      console.warn('PanelManager: MessageHandler not set, chat functionality will be limited');
+      console.warn(
+        "PanelManager: MessageHandler not set, chat functionality will be limited",
+      );
     }
 
     this.chatPanel.init();
 
     // PRESERVE ALL EXISTING MESSAGE HANDLING
-    this.currentPanel.webview.onDidReceiveMessage(async message => {
+    this.currentPanel.webview.onDidReceiveMessage(async (message) => {
       await this.handleWebviewMessage(message);
     });
 
@@ -86,31 +91,57 @@ class PanelManager {
     if (!this.chatPanel) return;
 
     switch (message.command) {
-      case 'analyzeFile':
+      case "analyzeFile":
         if (this.agentManager) {
           try {
-            const result = await this.agentManager.analyzeFileContent(message.filePath);
-            this.chatPanel.addMessage('assistant', `File Analysis for ${message.filePath}:\n${result}`);
+            const result = await this.agentManager.analyzeFileContent(
+              message.filePath,
+            );
+            this.chatPanel.addMessage(
+              "assistant",
+              `File Analysis for ${message.filePath}:\n${result}`,
+            );
           } catch (error) {
-            this.chatPanel.addMessage('assistant', `Error analyzing file: ${(error as Error).message}`);
+            this.chatPanel.addMessage(
+              "assistant",
+              `Error analyzing file: ${(error as Error).message}`,
+            );
           }
         } else {
-          console.warn('PanelManager: AgentManager not available for file analysis');
-          this.chatPanel.addMessage('assistant', 'File analysis not available - agent manager not initialized');
+          console.warn(
+            "PanelManager: AgentManager not available for file analysis",
+          );
+          this.chatPanel.addMessage(
+            "assistant",
+            "File analysis not available - agent manager not initialized",
+          );
         }
         break;
-      
-      case 'executeCommand':
+
+      case "executeCommand":
         if (this.agentManager) {
           try {
-            const result = await this.agentManager.executeTerminalCommand(message.commandText);
-            this.chatPanel.addMessage('assistant', `Command Output:\n${result}`);
+            const result = await this.agentManager.executeTerminalCommand(
+              message.commandText,
+            );
+            this.chatPanel.addMessage(
+              "assistant",
+              `Command Output:\n${result}`,
+            );
           } catch (error) {
-            this.chatPanel.addMessage('assistant', `Command Error: ${(error as Error).message}`);
+            this.chatPanel.addMessage(
+              "assistant",
+              `Command Error: ${(error as Error).message}`,
+            );
           }
         } else {
-          console.warn('PanelManager: AgentManager not available for command execution');
-          this.chatPanel.addMessage('assistant', 'Command execution not available - agent manager not initialized');
+          console.warn(
+            "PanelManager: AgentManager not available for command execution",
+          );
+          this.chatPanel.addMessage(
+            "assistant",
+            "Command execution not available - agent manager not initialized",
+          );
         }
         break;
     }
@@ -119,57 +150,56 @@ class PanelManager {
   // New method to display workspace analysis with proper implementation
   displayAnalysis(response: string): void {
     if (this.chatPanel) {
-      this.chatPanel.addMessage('assistant', response);
+      this.chatPanel.addMessage("assistant", response);
     }
   }
 
   // Handle panel resize and collapse events
   onResize(): void {
     // Implementation for handling panel resizing
-    console.log('Panel resized');
+    console.log("Panel resized");
   }
 
   onCollapse(): void {
     // Implementation for handling panel collapsing
-    console.log('Panel collapsed');
+    console.log("Panel collapsed");
   }
 
   // Switch between bottom panel and right sidebar with proper implementation
-  switchPosition(newPosition: 'panel' | 'sidebar'): void {
+  switchPosition(newPosition: "panel" | "sidebar"): void {
     if (this.currentPanel) {
-      const viewColumn = newPosition === 'panel' 
-        ? vscode.ViewColumn.One 
-        : vscode.ViewColumn.Two;
-      
+      const viewColumn =
+        newPosition === "panel" ? vscode.ViewColumn.One : vscode.ViewColumn.Two;
+
       this.currentPanel.reveal(viewColumn);
     } else {
-      console.warn('PanelManager: Cannot switch position, no active panel');
+      console.warn("PanelManager: Cannot switch position, no active panel");
     }
   }
 
   // Toggle theme and update configuration
   toggleTheme(): void {
     // Implementation for toggling dark/light themes
-    console.log('Theme toggled');
+    console.log("Theme toggled");
   }
 
   // Save the current state including theme preference
   saveState(): void {
     // Implementation for saving panel state
-    console.log('Panel state saved');
+    console.log("Panel state saved");
   }
 
   // Restore the saved state including theme preference
   restoreState(): void {
     // Implementation for restoring panel state
-    console.log('Panel state restored');
+    console.log("Panel state restored");
   }
 
   // Implementation of applyCode method to modify workspace content
   private applyCode(content: string): void {
     // This would need implementation using VS Code's workspace API
-    console.log('Applying code changes:', content);
-    
+    console.log("Applying code changes:", content);
+
     // Example placeholder for actual file modification logic:
     /*
     const editor = vscode.window.activeTextEditor;
@@ -188,8 +218,8 @@ class PanelManager {
   // Implementation of runCode method to execute code in a sandbox
   private runCode(content: string): void {
     // This would need implementation for running code safely
-    console.log('Running code:', content);
-    
+    console.log("Running code:", content);
+
     // Example placeholder:
     /*
     vscode.window.showInformationMessage(`Executing code:\n${content}`);
@@ -199,8 +229,8 @@ class PanelManager {
   // Implementation of editCode method to open code in editor
   private editCode(content: string): void {
     // This would need implementation for opening files in editors
-    console.log('Editing code:', content);
-    
+    console.log("Editing code:", content);
+
     // Example placeholder:
     /*
     vscode.workspace.openTextDocument({
@@ -215,14 +245,20 @@ class PanelManager {
   // Implementation of displayDiffPreview to show in chat
   displayDiffPreview(changeDetails: any): void {
     if (this.chatPanel) {
-      this.chatPanel.addMessage('assistant', `Code changes preview:\n\`\`\`\n${JSON.stringify(changeDetails, null, 2)}\n\`\`\``);
+      this.chatPanel.addMessage(
+        "assistant",
+        `Code changes preview:\n\`\`\`\n${JSON.stringify(changeDetails, null, 2)}\n\`\`\``,
+      );
     }
   }
 
   // Implementation for showing terminal output in chat
   showTerminalOutput(output: string): void {
     if (this.chatPanel) {
-      this.chatPanel.addMessage('assistant', `Terminal output:\n\`\`\`\n${output}\n\`\`\``);
+      this.chatPanel.addMessage(
+        "assistant",
+        `Terminal output:\n\`\`\`\n${output}\n\`\`\``,
+      );
     }
   }
 

@@ -1,5 +1,11 @@
-import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import '../styles/OfflineMode.css';
+import React, {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  ReactNode,
+} from "react";
+import "../styles/OfflineMode.css";
 
 export interface OfflineContextType {
   isOnline: boolean;
@@ -24,7 +30,7 @@ const OfflineContext = createContext<OfflineContextType | null>(null);
 export function useOfflineMode(): OfflineContextType {
   const context = useContext(OfflineContext);
   if (!context) {
-    throw new Error('useOfflineMode must be used within an OfflineProvider');
+    throw new Error("useOfflineMode must be used within an OfflineProvider");
   }
   return context;
 }
@@ -35,10 +41,10 @@ interface OfflineProviderProps {
   onQueueProcessed?: (processedCount: number, failedCount: number) => void;
 }
 
-export function OfflineProvider({ 
-  children, 
+export function OfflineProvider({
+  children,
   onActionQueued,
-  onQueueProcessed 
+  onQueueProcessed,
 }: OfflineProviderProps) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -51,7 +57,7 @@ export function OfflineProvider({
       setIsOnline(true);
       setIsOfflineMode(false);
       setLastOnlineTime(new Date());
-      
+
       // Auto-process queue when coming back online
       if (queuedActions.length > 0) {
         processQueue();
@@ -67,12 +73,15 @@ export function OfflineProvider({
     const checkConnection = async () => {
       try {
         // Try to fetch a small resource with cache-busting
-        const response = await fetch(`http://localhost:1234/v1/models?_t=${Date.now()}`, {
-          method: 'HEAD',
-          cache: 'no-cache',
-          timeout: 5000
-        } as any);
-        
+        const response = await fetch(
+          `http://localhost:1234/v1/models?_t=${Date.now()}`,
+          {
+            method: "HEAD",
+            cache: "no-cache",
+            timeout: 5000,
+          } as any,
+        );
+
         if (response.ok && !isOnline) {
           handleOnline();
         }
@@ -87,15 +96,15 @@ export function OfflineProvider({
     checkConnection();
 
     // Set up event listeners
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     // Periodic connection check (every 30 seconds)
     const intervalId = setInterval(checkConnection, 30000);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
       clearInterval(intervalId);
     };
   }, [isOnline, queuedActions.length]);
@@ -103,30 +112,35 @@ export function OfflineProvider({
   // Load queued actions from localStorage on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('lms-copilot-offline-queue');
+      const stored = localStorage.getItem("lms-copilot-offline-queue");
       if (stored) {
         const parsed = JSON.parse(stored);
-        setQueuedActions(parsed.map((action: any) => ({
-          ...action,
-          timestamp: new Date(action.timestamp)
-        })));
+        setQueuedActions(
+          parsed.map((action: any) => ({
+            ...action,
+            timestamp: new Date(action.timestamp),
+          })),
+        );
       }
     } catch (error) {
-      console.error('Failed to load offline queue from localStorage:', error);
+      console.error("Failed to load offline queue from localStorage:", error);
     }
   }, []);
 
   // Save queued actions to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('lms-copilot-offline-queue', JSON.stringify(queuedActions));
+      localStorage.setItem(
+        "lms-copilot-offline-queue",
+        JSON.stringify(queuedActions),
+      );
     } catch (error) {
-      console.error('Failed to save offline queue to localStorage:', error);
+      console.error("Failed to save offline queue to localStorage:", error);
     }
   }, [queuedActions]);
 
   const addToQueue = (action: OfflineAction) => {
-    setQueuedActions(prev => [...prev, action]);
+    setQueuedActions((prev) => [...prev, action]);
     onActionQueued?.(action);
   };
 
@@ -146,12 +160,12 @@ export function OfflineProvider({
       } catch (error) {
         console.error(`Failed to process offline action ${action.id}:`, error);
         failedCount++;
-        
+
         // Retry logic: keep action in queue if under retry limit
         if (action.retryCount < 3) {
           remainingActions.push({
             ...action,
-            retryCount: action.retryCount + 1
+            retryCount: action.retryCount + 1,
           });
         }
       }
@@ -172,7 +186,7 @@ export function OfflineProvider({
     queuedActions,
     addToQueue,
     processQueue,
-    clearQueue
+    clearQueue,
   };
 
   return (
@@ -186,10 +200,10 @@ export function OfflineProvider({
 async function executeOfflineAction(action: OfflineAction): Promise<void> {
   // This would be implemented based on your action types
   switch (action.type) {
-    case 'sendMessage':
+    case "sendMessage":
       // Re-send the message
       break;
-    case 'saveSettings':
+    case "saveSettings":
       // Save settings
       break;
     default:
@@ -203,8 +217,18 @@ interface OfflineBannerProps {
   showQueue?: boolean;
 }
 
-export function OfflineBanner({ onDismiss, showQueue = true }: OfflineBannerProps) {
-  const { isOfflineMode, isOnline, queuedActions, processQueue, clearQueue, lastOnlineTime } = useOfflineMode();
+export function OfflineBanner({
+  onDismiss,
+  showQueue = true,
+}: OfflineBannerProps) {
+  const {
+    isOfflineMode,
+    isOnline,
+    queuedActions,
+    processQueue,
+    clearQueue,
+    lastOnlineTime,
+  } = useOfflineMode();
   const [isDismissed, setIsDismissed] = useState(false);
 
   if (!isOfflineMode || isDismissed) {
@@ -218,17 +242,17 @@ export function OfflineBanner({ onDismiss, showQueue = true }: OfflineBannerProp
 
   const handleRetryConnection = async () => {
     try {
-      const response = await fetch('http://localhost:1234/v1/models', {
-        method: 'HEAD',
-        cache: 'no-cache'
+      const response = await fetch("http://localhost:1234/v1/models", {
+        method: "HEAD",
+        cache: "no-cache",
       });
-      
+
       if (response.ok) {
         // Connection restored
-        window.dispatchEvent(new Event('online'));
+        window.dispatchEvent(new Event("online"));
       }
     } catch (error) {
-      console.error('Manual connection retry failed:', error);
+      console.error("Manual connection retry failed:", error);
     }
   };
 
@@ -243,42 +267,50 @@ export function OfflineBanner({ onDismiss, showQueue = true }: OfflineBannerProp
               strokeWidth="2"
               strokeLinecap="round"
             />
-            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+            <circle
+              cx="12"
+              cy="12"
+              r="3"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
           </svg>
         </div>
-        
+
         <div className="offline-banner__message">
           <strong>You're currently offline</strong>
           <p>
-            {lastOnlineTime 
+            {lastOnlineTime
               ? `Last connected: ${lastOnlineTime.toLocaleTimeString()}`
-              : 'Check your internet connection'
-            }
+              : "Check your internet connection"}
           </p>
           {showQueue && queuedActions.length > 0 && (
-            <p>{queuedActions.length} action(s) queued for when you're back online</p>
+            <p>
+              {queuedActions.length} action(s) queued for when you're back
+              online
+            </p>
           )}
         </div>
 
         <div className="offline-banner__actions">
-          <button 
+          <button
             className="offline-banner__button offline-banner__button--retry"
             onClick={handleRetryConnection}
           >
             Retry Connection
           </button>
-          
+
           {showQueue && queuedActions.length > 0 && isOnline && (
-            <button 
+            <button
               className="offline-banner__button offline-banner__button--process"
               onClick={processQueue}
             >
               Process Queue ({queuedActions.length})
             </button>
           )}
-          
+
           {showQueue && queuedActions.length > 0 && (
-            <button 
+            <button
               className="offline-banner__button offline-banner__button--clear"
               onClick={clearQueue}
             >
@@ -288,13 +320,17 @@ export function OfflineBanner({ onDismiss, showQueue = true }: OfflineBannerProp
         </div>
       </div>
 
-      <button 
+      <button
         className="offline-banner__dismiss"
         onClick={handleDismiss}
         aria-label="Dismiss offline notification"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2"/>
+          <path
+            d="M18 6L6 18M6 6l12 12"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
         </svg>
       </button>
     </div>
@@ -307,13 +343,13 @@ export function useOfflineAwareRequest() {
 
   const makeRequest = async (
     requestFn: () => Promise<any>,
-    fallbackAction?: OfflineAction
+    fallbackAction?: OfflineAction,
   ): Promise<any> => {
     if (!isOnline) {
       if (fallbackAction) {
         addToQueue(fallbackAction);
       }
-      throw new Error('Cannot perform request while offline');
+      throw new Error("Cannot perform request while offline");
     }
 
     try {

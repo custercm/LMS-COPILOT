@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import '../styles/EnhancedTooltip.css';
+import React, { useState, useRef, useEffect } from "react";
+import "../styles/EnhancedTooltip.css";
 
 interface TooltipProps {
   children: React.ReactNode;
   content: string | React.ReactNode;
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  position?: "top" | "bottom" | "left" | "right";
   delay?: number;
   disabled?: boolean;
   className?: string;
@@ -15,12 +15,12 @@ interface TooltipProps {
 const EnhancedTooltip: React.FC<TooltipProps> = ({
   children,
   content,
-  position = 'top',
+  position = "top",
   delay = 500,
   disabled = false,
-  className = '',
+  className = "",
   showOnFocus = true,
-  maxWidth = 250
+  maxWidth = 250,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [actualPosition, setActualPosition] = useState(position);
@@ -30,11 +30,11 @@ const EnhancedTooltip: React.FC<TooltipProps> = ({
 
   const showTooltip = () => {
     if (disabled || !content) return;
-    
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);
     }, delay);
@@ -54,31 +54,31 @@ const EnhancedTooltip: React.FC<TooltipProps> = ({
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
       const viewport = {
         width: window.innerWidth,
-        height: window.innerHeight
+        height: window.innerHeight,
       };
 
       let newPosition = position;
 
       // Check if tooltip would overflow viewport
       switch (position) {
-        case 'top':
+        case "top":
           if (triggerRect.top - tooltipRect.height < 10) {
-            newPosition = 'bottom';
+            newPosition = "bottom";
           }
           break;
-        case 'bottom':
+        case "bottom":
           if (triggerRect.bottom + tooltipRect.height > viewport.height - 10) {
-            newPosition = 'top';
+            newPosition = "top";
           }
           break;
-        case 'left':
+        case "left":
           if (triggerRect.left - tooltipRect.width < 10) {
-            newPosition = 'right';
+            newPosition = "right";
           }
           break;
-        case 'right':
+        case "right":
           if (triggerRect.right + tooltipRect.width > viewport.width - 10) {
-            newPosition = 'left';
+            newPosition = "left";
           }
           break;
       }
@@ -104,10 +104,10 @@ const EnhancedTooltip: React.FC<TooltipProps> = ({
       onMouseLeave={hideTooltip}
       onFocus={showOnFocus ? showTooltip : undefined}
       onBlur={showOnFocus ? hideTooltip : undefined}
-      aria-describedby={isVisible ? 'tooltip' : undefined}
+      aria-describedby={isVisible ? "tooltip" : undefined}
     >
       {children}
-      
+
       {isVisible && content && (
         <div
           ref={tooltipRef}
@@ -117,9 +117,7 @@ const EnhancedTooltip: React.FC<TooltipProps> = ({
           aria-live="polite"
           style={{ maxWidth: `${maxWidth}px` }}
         >
-          <div className="tooltip-content">
-            {content}
-          </div>
+          <div className="tooltip-content">{content}</div>
           <div className={`tooltip-arrow ${actualPosition}`} />
         </div>
       )}

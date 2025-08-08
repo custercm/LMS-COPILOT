@@ -1,28 +1,28 @@
-import { useState, useEffect } from 'react';
-import { WebviewCommand } from '../types/api';
+import { useState, useEffect } from "react";
+import { WebviewCommand } from "../types/api";
 
 // This would normally use VS Code's webview API
 function useWebviewApi() {
   const [vscode, setVscode] = useState<any>(null);
-  
+
   useEffect(() => {
     // @ts-ignore - This is provided by VS Code's webview environment
     if (window.acquireVsCodeApi) {
       // @ts-ignore
       setVscode(window.acquireVsCodeApi());
     }
-    
+
     // For testing: mock the API when running tests
-    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
       // Mock implementation for unit tests
       const mockVscode = {
-        postMessage: (message: any) => console.log('Test message:', message),
-        getState: () => ({ theme: 'dark', lastCommand: null }),
-        setState: (state: any) => console.log('Test state update:', state)
+        postMessage: (message: any) => console.log("Test message:", message),
+        getState: () => ({ theme: "dark", lastCommand: null }),
+        setState: (state: any) => console.log("Test state update:", state),
       };
       setVscode(mockVscode);
     }
-    
+
     return () => {
       // Cleanup if needed
     };
@@ -35,24 +35,24 @@ function useWebviewApi() {
   // Handle command messages specifically
   const sendCommand = (command: string, args?: any) => {
     sendMessage({
-      type: 'command',
-      payload: { command, args }
+      type: "command",
+      payload: { command, args },
     });
   };
 
-  return { 
-    vscode, 
+  return {
+    vscode,
     sendMessage,
-    sendCommand
+    sendCommand,
   };
 }
 
 // Enhanced test methods for webview hooks
 export function createTestWebviewHookWithValidation() {
   const mockVscode = {
-    postMessage: (message: any) => console.log('Test message posted:', message),
-    getState: () => ({ theme: 'dark', lastCommand: null }),
-    setState: (state: any) => console.log('Test state set:', state)
+    postMessage: (message: any) => console.log("Test message posted:", message),
+    getState: () => ({ theme: "dark", lastCommand: null }),
+    setState: (state: any) => console.log("Test state set:", state),
   };
 
   return {
@@ -60,8 +60,8 @@ export function createTestWebviewHookWithValidation() {
     sendMessage: mockVscode.postMessage,
     sendCommand: (command: string, args?: any) => {
       mockVscode.postMessage({
-        type: 'command',
-        payload: { command, args }
+        type: "command",
+        payload: { command, args },
       });
     },
 
@@ -69,32 +69,34 @@ export function createTestWebviewHookWithValidation() {
     validateHookUsage: (): boolean => {
       try {
         const result = createTestWebviewHook();
-        return typeof result.sendMessage === 'function' &&
-               typeof result.sendCommand === 'function';
+        return (
+          typeof result.sendMessage === "function" &&
+          typeof result.sendCommand === "function"
+        );
       } catch (error) {
-        console.error('Hook validation failed:', error);
+        console.error("Hook validation failed:", error);
         return false;
       }
     },
 
     // Add performance benchmark for hook
-    runHookPerformanceBenchmark: async (): Promise<{duration: number}> => {
+    runHookPerformanceBenchmark: async (): Promise<{ duration: number }> => {
       const startTime = Date.now();
 
       try {
         const result = createTestWebviewHook();
         const isValid = result.validateHookUsage();
 
-        if (!isValid) throw new Error('Hook validation failed');
+        if (!isValid) throw new Error("Hook validation failed");
 
         const endTime = Date.now();
         return { duration: endTime - startTime };
       } catch (error) {
-        console.error('Hook performance benchmark failed:', error);
+        console.error("Hook performance benchmark failed:", error);
         const endTime = Date.now();
         return { duration: endTime - startTime };
       }
-    }
+    },
   };
 }
 
@@ -102,9 +104,9 @@ export function createTestWebviewHookWithValidation() {
 export function createTestWebviewHook() {
   // Mock implementation specifically for E2E tests
   const mockVscode = {
-    postMessage: (message: any) => console.log('Test message posted:', message),
-    getState: () => ({ theme: 'dark', lastCommand: null }),
-    setState: (state: any) => console.log('Test state set:', state)
+    postMessage: (message: any) => console.log("Test message posted:", message),
+    getState: () => ({ theme: "dark", lastCommand: null }),
+    setState: (state: any) => console.log("Test state set:", state),
   };
 
   return {
@@ -112,22 +114,28 @@ export function createTestWebviewHook() {
     sendMessage: mockVscode.postMessage,
     sendCommand: (command: string, args?: any) => {
       mockVscode.postMessage({
-        type: 'command',
-        payload: { command, args }
+        type: "command",
+        payload: { command, args },
       });
     },
 
     // Add testing methods for webview communication
-    testWebviewCommunication: async (): Promise<{success: boolean, latency?: number}> => {
+    testWebviewCommunication: async (): Promise<{
+      success: boolean;
+      latency?: number;
+    }> => {
       const startTime = Date.now();
 
       try {
-        mockVscode.postMessage({ type: 'test-communication', payload: { timestamp: startTime } });
+        mockVscode.postMessage({
+          type: "test-communication",
+          payload: { timestamp: startTime },
+        });
 
         const endTime = Date.now();
         return {
           success: true,
-          latency: endTime - startTime
+          latency: endTime - startTime,
         };
       } catch (error) {
         return { success: false };
@@ -135,16 +143,16 @@ export function createTestWebviewHook() {
     },
 
     // Performance benchmark for API hooks
-    runApiPerformanceTest: async (): Promise<{duration: number}> => {
+    runApiPerformanceTest: async (): Promise<{ duration: number }> => {
       const startTime = Date.now();
 
       try {
-        await mockVscode.postMessage({ type: 'performance-test', payload: {} });
+        await mockVscode.postMessage({ type: "performance-test", payload: {} });
 
         const endTime = Date.now();
         return { duration: endTime - startTime };
       } catch (error) {
-        console.error('API performance test failed:', error);
+        console.error("API performance test failed:", error);
         const endTime = Date.now();
         return { duration: endTime - startTime };
       }
@@ -152,10 +160,12 @@ export function createTestWebviewHook() {
 
     // Validate hook usage for testing
     validateHookUsage: (): boolean => {
-      return typeof mockVscode.postMessage === 'function' && 
-             typeof mockVscode.getState === 'function' && 
-             typeof mockVscode.setState === 'function';
-    }
+      return (
+        typeof mockVscode.postMessage === "function" &&
+        typeof mockVscode.getState === "function" &&
+        typeof mockVscode.setState === "function"
+      );
+    },
   };
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 /**
  * Custom hook for debouncing input values to improve performance
@@ -30,7 +30,7 @@ export const useDebounce = <T>(value: T, delay: number): T => {
  */
 export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   callback: T,
-  delay: number
+  delay: number,
 ): T => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -63,7 +63,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
  */
 export const useThrottle = <T extends (...args: any[]) => any>(
   callback: T,
-  delay: number
+  delay: number,
 ): T => {
   const lastCallRef = useRef<number>(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -79,7 +79,7 @@ export const useThrottle = <T extends (...args: any[]) => any>(
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      
+
       timeoutRef.current = setTimeout(() => {
         lastCallRef.current = Date.now();
         callback(...args);
@@ -104,7 +104,10 @@ export const useThrottle = <T extends (...args: any[]) => any>(
  * @param delay - Debounce delay in milliseconds
  * @returns Object with value, debouncedValue, and setValue
  */
-export const useOptimizedInput = (initialValue: string = '', delay: number = 300) => {
+export const useOptimizedInput = (
+  initialValue: string = "",
+  delay: number = 300,
+) => {
   const [value, setValue] = useState(initialValue);
   const debouncedValue = useDebounce(value, delay);
 
@@ -112,7 +115,7 @@ export const useOptimizedInput = (initialValue: string = '', delay: number = 300
     value,
     debouncedValue,
     setValue,
-    isDebouncing: value !== debouncedValue
+    isDebouncing: value !== debouncedValue,
   };
 };
 

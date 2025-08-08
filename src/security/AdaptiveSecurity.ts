@@ -4,10 +4,10 @@
  */
 
 export enum SecurityLevel {
-  DISABLED = 'disabled',      // No security (fastest, personal use)
-  MINIMAL = 'minimal',        // Basic protection (recommended for personal)
-  STANDARD = 'standard',      // Moderate security (team use)
-  STRICT = 'strict'          // Full security (enterprise/public)
+  DISABLED = "disabled", // No security (fastest, personal use)
+  MINIMAL = "minimal", // Basic protection (recommended for personal)
+  STANDARD = "standard", // Moderate security (team use)
+  STRICT = "strict", // Full security (enterprise/public)
 }
 
 export interface AdaptiveValidationResult {
@@ -65,19 +65,19 @@ export class SecurityConfigManager {
           enableFilePermissions: false,
           enableAuditLogging: false,
           enableCSPStrict: false,
-          allowDangerousCommands: true
+          allowDangerousCommands: true,
         };
 
       case SecurityLevel.MINIMAL:
         return {
           level,
-          enableRateLimiting: true,         // Prevent overwhelming LM Studio
-          enableInputSanitization: true,    // Prevent crashes
-          enableCommandValidation: true,    // Basic safety (prevent rm -rf)
-          enableFilePermissions: false,     // Skip complex file checks
-          enableAuditLogging: false,        // Skip logging overhead
-          enableCSPStrict: false,           // Allow unsafe-inline for convenience
-          allowDangerousCommands: false     // Block obviously dangerous commands
+          enableRateLimiting: true, // Prevent overwhelming LM Studio
+          enableInputSanitization: true, // Prevent crashes
+          enableCommandValidation: true, // Basic safety (prevent rm -rf)
+          enableFilePermissions: false, // Skip complex file checks
+          enableAuditLogging: false, // Skip logging overhead
+          enableCSPStrict: false, // Allow unsafe-inline for convenience
+          allowDangerousCommands: false, // Block obviously dangerous commands
         };
 
       case SecurityLevel.STANDARD:
@@ -89,7 +89,7 @@ export class SecurityConfigManager {
           enableFilePermissions: true,
           enableAuditLogging: true,
           enableCSPStrict: true,
-          allowDangerousCommands: false
+          allowDangerousCommands: false,
         };
 
       case SecurityLevel.STRICT:
@@ -101,7 +101,7 @@ export class SecurityConfigManager {
           enableFilePermissions: true,
           enableAuditLogging: true,
           enableCSPStrict: true,
-          allowDangerousCommands: false
+          allowDangerousCommands: false,
         };
 
       default:
@@ -122,20 +122,20 @@ export class AdaptiveSecurityManager {
 
   public shouldValidateCommand(command: string): boolean {
     const config = this.configManager.getConfig();
-    
+
     if (!config.enableCommandValidation) {
       return false;
     }
 
     // Only validate obviously dangerous commands even in minimal mode
     const criticalPatterns = [
-      /rm\s+-rf\s+\/(?!\w)/,  // rm -rf / (but allow rm -rf /specific/path)
+      /rm\s+-rf\s+\/(?!\w)/, // rm -rf / (but allow rm -rf /specific/path)
       /format\s+[a-z]:/i,
       /sudo\s+shutdown/i,
-      /sudo\s+reboot/i
+      /sudo\s+reboot/i,
     ];
 
-    return criticalPatterns.some(pattern => pattern.test(command));
+    return criticalPatterns.some((pattern) => pattern.test(command));
   }
 
   public shouldRateLimit(operation: string): boolean {
@@ -160,7 +160,7 @@ export class AdaptiveSecurityManager {
 
   public getCSPPolicy(webview: any): string {
     const config = this.configManager.getConfig();
-    
+
     if (!config.enableCSPStrict) {
       // Relaxed CSP for personal use - allows more flexibility
       return [
@@ -170,7 +170,7 @@ export class AdaptiveSecurityManager {
         `img-src ${webview.cspSource} data: https:`,
         `font-src ${webview.cspSource}`,
         `connect-src https: wss: ws: http://localhost:*`, // Allow local connections
-      ].join('; ');
+      ].join("; ");
     }
 
     // Strict CSP (original implementation)
@@ -187,8 +187,8 @@ export class AdaptiveSecurityManager {
       `worker-src 'none'`,
       `frame-ancestors 'none'`,
       `form-action 'none'`,
-      `base-uri 'none'`
-    ].join('; ');
+      `base-uri 'none'`,
+    ].join("; ");
   }
 
   public validateCommand(command: string): AdaptiveValidationResult {
@@ -197,8 +197,8 @@ export class AdaptiveSecurityManager {
     }
 
     // Only block the most dangerous commands
-    if (command.includes('rm -rf /')) {
-      return { isValid: false, reason: 'Prevented deletion of root directory' };
+    if (command.includes("rm -rf /")) {
+      return { isValid: false, reason: "Prevented deletion of root directory" };
     }
 
     return { isValid: true };
@@ -211,7 +211,7 @@ export class AdaptiveSecurityManager {
 
     // Minimal sanitization - just prevent obvious script injection
     return input
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
       .slice(0, 100000); // Reasonable length limit
   }
 }

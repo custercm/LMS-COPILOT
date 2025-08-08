@@ -3,11 +3,11 @@
  */
 
 export enum ErrorLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
-  FATAL = 'fatal'
+  DEBUG = "debug",
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
+  FATAL = "fatal",
 }
 
 export interface ErrorLogEntry {
@@ -47,25 +47,25 @@ class ErrorLogger {
 
   private setupGlobalErrorHandlers(): void {
     // Catch unhandled errors
-    window.addEventListener('error', (event) => {
-      this.log(ErrorLevel.ERROR, 'Unhandled error', event.error, {
+    window.addEventListener("error", (event) => {
+      this.log(ErrorLevel.ERROR, "Unhandled error", event.error, {
         filename: event.filename,
         lineno: event.lineno,
-        colno: event.colno
+        colno: event.colno,
       });
     });
 
     // Catch unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      this.log(ErrorLevel.ERROR, 'Unhandled promise rejection', event.reason, {
-        promise: event.promise
+    window.addEventListener("unhandledrejection", (event) => {
+      this.log(ErrorLevel.ERROR, "Unhandled promise rejection", event.reason, {
+        promise: event.promise,
       });
     });
 
     // Catch console errors (optional)
     const originalConsoleError = console.error;
     console.error = (...args) => {
-      this.log(ErrorLevel.ERROR, 'Console error', undefined, { args });
+      this.log(ErrorLevel.ERROR, "Console error", undefined, { args });
       originalConsoleError.apply(console, args);
     };
   }
@@ -74,7 +74,7 @@ class ErrorLogger {
     level: ErrorLevel,
     message: string,
     error?: Error,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ): void {
     const entry: ErrorLogEntry = {
       id: this.generateId(),
@@ -86,7 +86,7 @@ class ErrorLogger {
       stack: error?.stack,
       userAgent: navigator.userAgent,
       url: window.location.href,
-      sessionId: this.sessionId
+      sessionId: this.sessionId,
     };
 
     this.logs.push(entry);
@@ -97,7 +97,7 @@ class ErrorLogger {
     }
 
     // Also log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       this.logToConsole(entry);
     }
 
@@ -113,7 +113,7 @@ class ErrorLogger {
 
   private logToConsole(entry: ErrorLogEntry): void {
     const prefix = `[${entry.level.toUpperCase()}] ${entry.timestamp.toISOString()}`;
-    
+
     switch (entry.level) {
       case ErrorLevel.DEBUG:
         console.debug(prefix, entry.message, entry.context);
@@ -138,18 +138,18 @@ class ErrorLogger {
         const vscode = (window as any).vscode;
         if (vscode && vscode.postMessage) {
           vscode.postMessage({
-            type: 'errorReport',
-            payload: this.sanitizeLogEntry(entry)
+            type: "errorReport",
+            payload: this.sanitizeLogEntry(entry),
           });
         }
       } catch (vscodeError) {
-        console.error('Failed to send error to VS Code:', vscodeError);
+        console.error("Failed to send error to VS Code:", vscodeError);
       }
 
       // Could also send to external error reporting service
       // await this.sendToExternalService(entry);
     } catch (error) {
-      console.error('Failed to report error:', error);
+      console.error("Failed to report error:", error);
     }
   }
 
@@ -163,20 +163,22 @@ class ErrorLogger {
       userAgent: entry.userAgent,
       url: entry.url,
       sessionId: entry.sessionId,
-      context: this.sanitizeContext(entry.context)
+      context: this.sanitizeContext(entry.context),
     };
   }
 
-  private sanitizeContext(context?: Record<string, any>): Record<string, any> | undefined {
+  private sanitizeContext(
+    context?: Record<string, any>,
+  ): Record<string, any> | undefined {
     if (!context) return undefined;
 
     // Remove sensitive information
     const sanitized = { ...context };
-    const sensitiveKeys = ['password', 'token', 'apiKey', 'secret', 'auth'];
-    
+    const sensitiveKeys = ["password", "token", "apiKey", "secret", "auth"];
+
     for (const key of sensitiveKeys) {
       if (key in sanitized) {
-        sanitized[key] = '[REDACTED]';
+        sanitized[key] = "[REDACTED]";
       }
     }
 
@@ -206,7 +208,7 @@ class ErrorLogger {
 
   getLogs(level?: ErrorLevel): ErrorLogEntry[] {
     if (level) {
-      return this.logs.filter(log => log.level === level);
+      return this.logs.filter((log) => log.level === level);
     }
     return [...this.logs];
   }
@@ -220,12 +222,12 @@ class ErrorLogger {
   }
 
   exportLogs(options: ErrorReportOptions = {}): string {
-    const logs = this.logs.map(log => {
+    const logs = this.logs.map((log) => {
       const exported: any = {
         timestamp: log.timestamp.toISOString(),
         level: log.level,
         message: log.message,
-        sessionId: log.sessionId
+        sessionId: log.sessionId,
       };
 
       if (options.includeUserAgent && log.userAgent) {
@@ -242,8 +244,10 @@ class ErrorLogger {
 
       if (log.stack) {
         if (options.maxStackLines) {
-          const stackLines = log.stack.split('\n').slice(0, options.maxStackLines);
-          exported.stack = stackLines.join('\n');
+          const stackLines = log.stack
+            .split("\n")
+            .slice(0, options.maxStackLines);
+          exported.stack = stackLines.join("\n");
         } else {
           exported.stack = log.stack;
         }
@@ -258,33 +262,41 @@ class ErrorLogger {
   // Performance monitoring
   measurePerformance<T>(
     operation: string,
-    fn: () => T | Promise<T>
+    fn: () => T | Promise<T>,
   ): T | Promise<T> {
     const start = performance.now();
-    
+
     try {
       const result = fn();
-      
+
       if (result instanceof Promise) {
         return result
-          .then(value => {
+          .then((value) => {
             const duration = performance.now() - start;
-            this.info(`Performance: ${operation}`, { duration: `${duration.toFixed(2)}ms` });
+            this.info(`Performance: ${operation}`, {
+              duration: `${duration.toFixed(2)}ms`,
+            });
             return value;
           })
-          .catch(error => {
+          .catch((error) => {
             const duration = performance.now() - start;
-            this.error(`Performance: ${operation} failed`, error, { duration: `${duration.toFixed(2)}ms` });
+            this.error(`Performance: ${operation} failed`, error, {
+              duration: `${duration.toFixed(2)}ms`,
+            });
             throw error;
           });
       } else {
         const duration = performance.now() - start;
-        this.info(`Performance: ${operation}`, { duration: `${duration.toFixed(2)}ms` });
+        this.info(`Performance: ${operation}`, {
+          duration: `${duration.toFixed(2)}ms`,
+        });
         return result;
       }
     } catch (error) {
       const duration = performance.now() - start;
-      this.error(`Performance: ${operation} failed`, error as Error, { duration: `${duration.toFixed(2)}ms` });
+      this.error(`Performance: ${operation} failed`, error as Error, {
+        duration: `${duration.toFixed(2)}ms`,
+      });
       throw error;
     }
   }
@@ -294,40 +306,50 @@ class ErrorLogger {
 export const errorLogger = new ErrorLogger();
 
 // Convenience functions
-export const logDebug = (message: string, context?: Record<string, any>) => 
+export const logDebug = (message: string, context?: Record<string, any>) =>
   errorLogger.debug(message, context);
 
-export const logInfo = (message: string, context?: Record<string, any>) => 
+export const logInfo = (message: string, context?: Record<string, any>) =>
   errorLogger.info(message, context);
 
-export const logWarn = (message: string, context?: Record<string, any>) => 
+export const logWarn = (message: string, context?: Record<string, any>) =>
   errorLogger.warn(message, context);
 
-export const logError = (message: string, error?: Error, context?: Record<string, any>) => 
-  errorLogger.error(message, error, context);
+export const logError = (
+  message: string,
+  error?: Error,
+  context?: Record<string, any>,
+) => errorLogger.error(message, error, context);
 
-export const logFatal = (message: string, error?: Error, context?: Record<string, any>) => 
-  errorLogger.fatal(message, error, context);
+export const logFatal = (
+  message: string,
+  error?: Error,
+  context?: Record<string, any>,
+) => errorLogger.fatal(message, error, context);
 
 // Decorator for automatic error logging
 export function withErrorLogging<T extends (...args: any[]) => any>(
   target: T,
-  context?: Record<string, any>
+  context?: Record<string, any>,
 ): T {
   return ((...args: Parameters<T>) => {
     try {
       const result = target(...args);
-      
+
       if (result instanceof Promise) {
-        return result.catch(error => {
+        return result.catch((error) => {
           errorLogger.error(`Function ${target.name} failed`, error, context);
           throw error;
         });
       }
-      
+
       return result;
     } catch (error) {
-      errorLogger.error(`Function ${target.name} failed`, error as Error, context);
+      errorLogger.error(
+        `Function ${target.name} failed`,
+        error as Error,
+        context,
+      );
       throw error;
     }
   }) as T;

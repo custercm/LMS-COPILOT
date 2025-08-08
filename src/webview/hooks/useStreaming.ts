@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface StreamingState {
   isStreaming: boolean;
@@ -8,20 +8,22 @@ interface StreamingState {
 }
 
 export function useStreaming() {
-  const [streamingState, setStreamingState] = useState<StreamingState | null>(null);
-  
+  const [streamingState, setStreamingState] = useState<StreamingState | null>(
+    null,
+  );
+
   // Enhanced startStreaming with accessibility features
   const startStreaming = (messageId: string) => {
     setStreamingState({
       isStreaming: true,
-      currentMessage: '',
+      currentMessage: "",
       messageId,
-      streamingSpeed: 50
+      streamingSpeed: 50,
     });
-    
+
     // Add aria-live for screen readers
-    if (typeof document !== 'undefined') {
-      const liveRegion = document.getElementById('aria-live-region');
+    if (typeof document !== "undefined") {
+      const liveRegion = document.getElementById("aria-live-region");
       if (liveRegion) {
         liveRegion.textContent = `Assistant is typing...`;
       }
@@ -30,23 +32,23 @@ export function useStreaming() {
 
   const appendToStream = (content: string) => {
     if (!streamingState?.isStreaming) return;
-    
+
     // Simulate character-by-character streaming with delay
-    setStreamingState(prev => ({
+    setStreamingState((prev) => ({
       ...prev!,
-      currentMessage: prev!.currentMessage + content
+      currentMessage: prev!.currentMessage + content,
     }));
   };
 
   const endStreaming = () => {
     if (streamingState) {
       setStreamingState(null);
-      
+
       // Clear aria-live region when done
-      if (typeof document !== 'undefined') {
-        const liveRegion = document.getElementById('aria-live-region');
+      if (typeof document !== "undefined") {
+        const liveRegion = document.getElementById("aria-live-region");
         if (liveRegion) {
-          liveRegion.textContent = '';
+          liveRegion.textContent = "";
         }
       }
     }
@@ -56,7 +58,7 @@ export function useStreaming() {
     streamingState,
     startStreaming,
     appendToStream,
-    endStreaming
+    endStreaming,
   };
 }
 
@@ -66,19 +68,19 @@ export const createTestStreamingHook = () => {
   return {
     streamingState: {
       isStreaming: false,
-      currentMessage: '',
-      messageId: 'test-123',
-      streamingSpeed: 50
+      currentMessage: "",
+      messageId: "test-123",
+      streamingSpeed: 50,
     },
     startStreaming: (messageId: string) => {
-      console.log('Streaming started for message:', messageId);
+      console.log("Streaming started for message:", messageId);
     },
     appendToStream: (content: string) => {
-      console.log('Appended to stream:', content);
+      console.log("Appended to stream:", content);
     },
-    
+
     endStreaming: () => {
-      console.log('Streaming ended');
+      console.log("Streaming ended");
     },
 
     // Testing methods
@@ -86,19 +88,23 @@ export const createTestStreamingHook = () => {
       return true; // Simplified for testing purposes
     },
 
-    runStreamingPerformanceTest: async (testData: string): Promise<{duration: number}> => {
+    runStreamingPerformanceTest: async (
+      testData: string,
+    ): Promise<{ duration: number }> => {
       const startTime = Date.now();
-      
+
       try {
         // Simulate streaming performance test with actual implementation logic
         if (testData.length > 0) {
-          await new Promise(resolve => setTimeout(resolve, testData.length * 0.1)); // Delay based on data size
+          await new Promise((resolve) =>
+            setTimeout(resolve, testData.length * 0.1),
+          ); // Delay based on data size
         }
-        
+
         const endTime = Date.now();
         return { duration: endTime - startTime };
       } catch (error) {
-        console.error('Streaming performance test failed:', error);
+        console.error("Streaming performance test failed:", error);
         const endTime = Date.now();
         return { duration: endTime - startTime };
       }
@@ -109,13 +115,15 @@ export const createTestStreamingHook = () => {
       return true; // Simplified validation check
     },
 
-    testChunkProcessing: async (chunkContent: string): Promise<{processed: boolean}> => {
+    testChunkProcessing: async (
+      chunkContent: string,
+    ): Promise<{ processed: boolean }> => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 10)); // Small delay to simulate processing time
+        await new Promise((resolve) => setTimeout(resolve, 10)); // Small delay to simulate processing time
         return { processed: true };
       } catch (error) {
         return { processed: false };
       }
-    }
+    },
   };
 };

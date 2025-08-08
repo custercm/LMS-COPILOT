@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import './CodeBlock.css';
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+import "./CodeBlock.css";
 
 // Lazy load PrismHighlighter for better performance
-const PrismHighlighter = lazy(() => import('./PrismHighlighter'));
+const PrismHighlighter = lazy(() => import("./PrismHighlighter"));
 
 interface CodeBlockProps {
   code: string;
@@ -23,7 +23,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   code,
   language,
   onApplyChange,
-  changeId
+  changeId,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCopiedToast, setShowCopiedToast] = useState(false);
@@ -47,9 +47,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         });
       },
       {
-        rootMargin: '50px',
-        threshold: 0.1
-      }
+        rootMargin: "50px",
+        threshold: 0.1,
+      },
     );
 
     observerRef.current.observe(codeRef.current);
@@ -82,7 +82,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       setShowCopiedToast(true);
       setTimeout(() => setShowCopiedToast(false), 2000);
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
+      console.error("Failed to copy to clipboard:", error);
     }
   };
 
@@ -103,11 +103,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   return (
     <div ref={codeRef} className="code-block">
       {showCopiedToast && (
-        <div className="toast-notification">
-          Copied to clipboard!
-        </div>
+        <div className="toast-notification">Copied to clipboard!</div>
       )}
-      
+
       {shouldHighlight && isInView ? (
         <Suspense fallback={<CodeLoadingPlaceholder />}>
           <PrismHighlighter code={code} language={language} />
@@ -117,18 +115,18 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
           <code className={`language-${language}`}>{code}</code>
         </pre>
       )}
-      
+
       <div className="code-actions">
-        <button 
+        <button
           onClick={copyToClipboard}
           className="action-button copy-button"
           title="Copy to clipboard"
         >
           Copy
         </button>
-        
+
         {onApplyChange && changeId && (
-          <button 
+          <button
             onClick={applyChanges}
             className="action-button apply-button"
             title="Apply changes"
@@ -136,17 +134,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             Apply
           </button>
         )}
-        
-        <button 
+
+        <button
           onClick={runCode}
           className="action-button run-button"
           title="Run code"
         >
           Run
         </button>
-        
+
         {code.length > 200 && (
-          <button 
+          <button
             onClick={toggleExpand}
             className="action-button expand-button"
             title={isExpanded ? "Collapse" : "Expand"}

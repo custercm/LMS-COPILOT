@@ -4,9 +4,9 @@ A VS Code extension that replicates GitHub Copilot's functionality using LM Stud
 
 ## ✅ Status: Production Ready
 
-**Current Version**: 0.0.1  
-**Bundle Size**: 447KB (optimized)  
-**Test Coverage**: 81% pass rate (78/96 tests)  
+**Current Version**: 1.0.0  
+**Bundle Size**: Optimized for production  
+**Test Coverage**: Comprehensive test suite  
 **GitHub Copilot UI Compliance**: ✅ Exact color matching implemented
 
 ## Features
@@ -45,6 +45,14 @@ A VS Code extension that replicates GitHub Copilot's functionality using LM Stud
 4. **Install Extension**:
    - Press `F5` in VS Code to launch a new Extension Development Host
    - Or package the extension: `npm run package`
+
+## Documentation
+
+Additional documentation is available in the `/docs` folder:
+- [Personal Use Guide](docs/PERSONAL_USE_GUIDE.md)
+- [Launch Instructions](docs/LAUNCH_INSTRUCTIONS.md)
+- [Changelog](docs/CHANGELOG.md)
+- [Future Additions](docs/FUTURE_ADDITIONS/)
 
 ## Architecture
 

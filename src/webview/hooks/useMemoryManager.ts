@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from "react";
 
 interface MemoryManagerOptions {
   maxMessages?: number;
@@ -23,7 +23,7 @@ export const useMemoryManager = (options: MemoryManagerOptions = {}) => {
     maxMessages = 1000,
     maxCacheSize = 50,
     cleanupInterval = 60000, // 1 minute
-    memoryThreshold = 100 * 1024 * 1024 // 100MB
+    memoryThreshold = 100 * 1024 * 1024, // 100MB
   } = options;
 
   const cacheRef = useRef<Map<string, any>>(new Map());
@@ -31,7 +31,7 @@ export const useMemoryManager = (options: MemoryManagerOptions = {}) => {
   const memoryStatsRef = useRef<MemoryStats>({
     messagesCount: 0,
     cacheSize: 0,
-    estimatedMemoryUsage: 0
+    estimatedMemoryUsage: 0,
   });
 
   // Estimate memory usage of an object
@@ -41,24 +41,27 @@ export const useMemoryManager = (options: MemoryManagerOptions = {}) => {
   }, []);
 
   // Add item to cache with memory-aware eviction
-  const addToCache = useCallback((key: string, value: any) => {
-    const cache = cacheRef.current;
-    const itemSize = estimateMemoryUsage(value);
+  const addToCache = useCallback(
+    (key: string, value: any) => {
+      const cache = cacheRef.current;
+      const itemSize = estimateMemoryUsage(value);
 
-    // Remove oldest items if cache is too large
-    if (cache.size >= maxCacheSize) {
-      const firstKey = cache.keys().next().value;
-      if (firstKey) {
-        cache.delete(firstKey);
+      // Remove oldest items if cache is too large
+      if (cache.size >= maxCacheSize) {
+        const firstKey = cache.keys().next().value;
+        if (firstKey) {
+          cache.delete(firstKey);
+        }
       }
-    }
 
-    cache.set(key, value);
-    
-    // Update memory stats
-    memoryStatsRef.current.cacheSize = cache.size;
-    memoryStatsRef.current.estimatedMemoryUsage += itemSize;
-  }, [maxCacheSize, estimateMemoryUsage]);
+      cache.set(key, value);
+
+      // Update memory stats
+      memoryStatsRef.current.cacheSize = cache.size;
+      memoryStatsRef.current.estimatedMemoryUsage += itemSize;
+    },
+    [maxCacheSize, estimateMemoryUsage],
+  );
 
   // Get item from cache
   const getFromCache = useCallback((key: string) => {
@@ -73,18 +76,21 @@ export const useMemoryManager = (options: MemoryManagerOptions = {}) => {
   }, []);
 
   // Cleanup old messages beyond the limit
-  const cleanupMessages = useCallback((messages: any[]) => {
-    if (messages.length > maxMessages) {
-      const excessCount = messages.length - maxMessages;
-      console.log(`Memory cleanup: removing ${excessCount} old messages`);
-      return messages.slice(excessCount);
-    }
-    return messages;
-  }, [maxMessages]);
+  const cleanupMessages = useCallback(
+    (messages: any[]) => {
+      if (messages.length > maxMessages) {
+        const excessCount = messages.length - maxMessages;
+        console.log(`Memory cleanup: removing ${excessCount} old messages`);
+        return messages.slice(excessCount);
+      }
+      return messages;
+    },
+    [maxMessages],
+  );
 
   // Force garbage collection (if available)
   const forceGarbageCollection = useCallback(() => {
-    if ('gc' in window && typeof (window as any).gc === 'function') {
+    if ("gc" in window && typeof (window as any).gc === "function") {
       (window as any).gc();
     }
   }, []);
@@ -92,9 +98,9 @@ export const useMemoryManager = (options: MemoryManagerOptions = {}) => {
   // Check memory usage and perform cleanup if needed
   const checkMemoryUsage = useCallback(() => {
     const stats = memoryStatsRef.current;
-    
+
     if (stats.estimatedMemoryUsage > memoryThreshold) {
-      console.warn('Memory threshold exceeded, performing cleanup');
+      console.warn("Memory threshold exceeded, performing cleanup");
       clearCache();
       forceGarbageCollection();
     }
@@ -114,12 +120,15 @@ export const useMemoryManager = (options: MemoryManagerOptions = {}) => {
   }, [checkMemoryUsage, cleanupInterval]);
 
   // Memory optimization for React components
-  const optimizeComponent = useCallback((component: React.ComponentType<any>) => {
-    return React.memo(component, (prevProps, nextProps) => {
-      // Custom comparison logic for memory optimization
-      return JSON.stringify(prevProps) === JSON.stringify(nextProps);
-    });
-  }, []);
+  const optimizeComponent = useCallback(
+    (component: React.ComponentType<any>) => {
+      return React.memo(component, (prevProps, nextProps) => {
+        // Custom comparison logic for memory optimization
+        return JSON.stringify(prevProps) === JSON.stringify(nextProps);
+      });
+    },
+    [],
+  );
 
   // Get current memory statistics
   const getMemoryStats = useCallback((): MemoryStats => {
@@ -151,7 +160,7 @@ export const useMemoryManager = (options: MemoryManagerOptions = {}) => {
     optimizeComponent,
     getMemoryStats,
     updateMessageCount,
-    estimateMemoryUsage
+    estimateMemoryUsage,
   };
 };
 

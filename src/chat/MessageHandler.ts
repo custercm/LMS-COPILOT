@@ -1,7 +1,7 @@
-import { ChatProvider } from './ChatProvider';
-import { ChatPanel } from './ChatPanel';
-import { AgentManager } from '../agent/AgentManager';
-import * as vscode from 'vscode';
+import { ChatProvider } from "./ChatProvider";
+import { ChatPanel } from "./ChatPanel";
+import { AgentManager } from "../agent/AgentManager";
+import * as vscode from "vscode";
 
 export class MessageHandler {
   private chatProvider: ChatProvider | null = null;
@@ -23,72 +23,82 @@ export class MessageHandler {
   }
 
   // Process incoming messages and route to appropriate handlers
-  async handleMessage(message: string, source: 'provider' | 'panel' = 'provider'): Promise<string> {
+  async handleMessage(
+    message: string,
+    source: "provider" | "panel" = "provider",
+  ): Promise<string> {
     try {
       // Add user message to display with null safety
-      if (source === 'provider' && this.chatProvider) {
+      if (source === "provider" && this.chatProvider) {
         // ChatProvider handles its own message display
-      } else if (source === 'panel' && this.chatPanel) {
-        this.chatPanel.addMessage('user', message);
+      } else if (source === "panel" && this.chatPanel) {
+        this.chatPanel.addMessage("user", message);
       } else {
-        console.warn(`MessageHandler: No ${source} available for message display`);
+        console.warn(
+          `MessageHandler: No ${source} available for message display`,
+        );
       }
 
       // Process the message
-      if (message.startsWith('/')) {
+      if (message.startsWith("/")) {
         return await this.handleCommand(message);
       } else {
         return await this.handleChatMessage(message);
       }
     } catch (error) {
       const errorMessage = `Error processing message: ${(error as Error).message}`;
-      
+
       // Add error message to display with null safety
-      if (source === 'provider' && this.chatProvider) {
+      if (source === "provider" && this.chatProvider) {
         // ChatProvider handles its own error display
-      } else if (source === 'panel' && this.chatPanel) {
-        this.chatPanel.addMessage('assistant', errorMessage);
+      } else if (source === "panel" && this.chatPanel) {
+        this.chatPanel.addMessage("assistant", errorMessage);
       } else {
-        console.error(`MessageHandler: No ${source} available for error display:`, errorMessage);
+        console.error(
+          `MessageHandler: No ${source} available for error display:`,
+          errorMessage,
+        );
       }
-      
+
       return errorMessage;
     }
   }
 
   private async handleCommand(command: string): Promise<string> {
-    const [cmd, ...args] = command.slice(1).split(' ');
-    
+    const [cmd, ...args] = command.slice(1).split(" ");
+
     switch (cmd.toLowerCase()) {
-      case 'help':
+      case "help":
         return this.getHelpMessage();
-      case 'clear':
+      case "clear":
         if (this.chatPanel) {
           this.chatPanel.clearMessages();
-          return 'Chat cleared.';
+          return "Chat cleared.";
         } else {
-          console.warn('MessageHandler: No chat panel available for clearing messages');
-          return 'Chat clear requested, but no active chat panel.';
+          console.warn(
+            "MessageHandler: No chat panel available for clearing messages",
+          );
+          return "Chat clear requested, but no active chat panel.";
         }
-      case 'workspace':
+      case "workspace":
         return await this.getWorkspaceInfo();
-      case 'model':
+      case "model":
         if (args.length > 0) {
           return await this.changeModel(args[0]);
         }
-        return 'Current model: ' + (await this.getCurrentModel());
-      case 'tools':
+        return "Current model: " + (await this.getCurrentModel());
+      case "tools":
         return this.getAvailableTools();
-      case 'task':
+      case "task":
         if (args.length > 0) {
-          return await this.executeTask(args.join(' '));
+          return await this.executeTask(args.join(" "));
         }
-        return 'Usage: /task <task description>';
-      case 'agent':
-        if (args[0] === 'status') {
+        return "Usage: /task <task description>";
+      case "agent":
+        if (args[0] === "status") {
           return this.getAgentStatus();
         }
-        return 'Usage: /agent status';
+        return "Usage: /agent status";
       default:
         return `Unknown command: ${cmd}. Type /help for available commands.`;
     }
@@ -96,21 +106,25 @@ export class MessageHandler {
 
   private async handleChatMessage(message: string): Promise<string> {
     // Add user message to conversation history
-    this.agentManager.getConversationHistory().addMessage('user', message);
-    
+    this.agentManager.getConversationHistory().addMessage("user", message);
+
     // Process with AI agent (now includes TaskExecutor and ToolRegistry integration)
     const response = await this.agentManager.processMessage(message);
-    
+
     // Add AI response to history
-    this.agentManager.getConversationHistory().addMessage('assistant', response);
-    
+    this.agentManager
+      .getConversationHistory()
+      .addMessage("assistant", response);
+
     // Add response to display with null safety
     if (this.chatPanel) {
-      this.chatPanel.addMessage('assistant', response);
+      this.chatPanel.addMessage("assistant", response);
     } else {
-      console.warn('MessageHandler: No chat panel available for response display');
+      console.warn(
+        "MessageHandler: No chat panel available for response display",
+      );
     }
-    
+
     return response;
   }
 
@@ -137,16 +151,16 @@ You can also ask me anything about your code, and I'll help you with:
   private getAvailableTools(): string {
     const toolRegistry = this.agentManager.getToolRegistry();
     const tools = toolRegistry.getAllTools();
-    
+
     if (tools.length === 0) {
-      return 'No tools are currently available.';
+      return "No tools are currently available.";
     }
-    
-    let result = 'Available Agent Tools:\n';
+
+    let result = "Available Agent Tools:\n";
     tools.forEach((tool: any) => {
       result += `• ${tool.name} (${tool.securityLevel}): ${tool.description}\n`;
     });
-    
+
     return result;
   }
 
@@ -162,7 +176,7 @@ You can also ask me anything about your code, and I'll help you with:
   private getAgentStatus(): string {
     const history = this.agentManager.getConversationHistory();
     const messages = history.getMessages();
-    
+
     return `Agent Status:
 • Conversation messages: ${messages.length}
 • Task executor: Available
@@ -173,7 +187,7 @@ You can also ask me anything about your code, and I'll help you with:
   private async getWorkspaceInfo(): Promise<string> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
-      return 'No workspace folder is currently open.';
+      return "No workspace folder is currently open.";
     }
 
     const folder = workspaceFolders[0];
@@ -183,7 +197,9 @@ You can also ask me anything about your code, and I'll help you with:
   private async changeModel(modelName: string): Promise<string> {
     try {
       // Update the configuration
-      await vscode.workspace.getConfiguration('lmsCopilot').update('model', modelName, vscode.ConfigurationTarget.Global);
+      await vscode.workspace
+        .getConfiguration("lmsCopilot")
+        .update("model", modelName, vscode.ConfigurationTarget.Global);
       return `Model changed to: ${modelName}`;
     } catch (error) {
       return `Failed to change model: ${(error as Error).message}`;
@@ -191,7 +207,7 @@ You can also ask me anything about your code, and I'll help you with:
   }
 
   private async getCurrentModel(): Promise<string> {
-    const config = vscode.workspace.getConfiguration('lmsCopilot');
-    return config.get('model', 'llama3');
+    const config = vscode.workspace.getConfiguration("lmsCopilot");
+    return config.get("model", "llama3");
   }
 }

@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './CommandPalette.css';
+import React, { useState, useEffect, useRef } from "react";
+import "./CommandPalette.css";
 
 export interface Command {
   name: string;
   description: string;
   shortcut?: string;
-  category: 'file' | 'chat' | 'code' | 'workspace' | 'debug';
+  category: "file" | "chat" | "code" | "workspace" | "debug";
   handler: (args?: string) => void;
 }
 
@@ -22,7 +22,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   onCommandSelect,
   onClose,
   isVisible,
-  initialFilter = ''
+  initialFilter = "",
 }) => {
   const [filter, setFilter] = useState(initialFilter);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -33,15 +33,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   // Fuzzy search implementation
   const fuzzySearch = (searchTerm: string, commands: Command[]): Command[] => {
     if (!searchTerm) return commands;
-    
+
     const searchLower = searchTerm.toLowerCase();
-    
+
     return commands
-      .map(command => {
+      .map((command) => {
         const nameScore = fuzzyMatch(searchLower, command.name.toLowerCase());
-        const descScore = fuzzyMatch(searchLower, command.description.toLowerCase());
+        const descScore = fuzzyMatch(
+          searchLower,
+          command.description.toLowerCase(),
+        );
         const score = Math.max(nameScore, descScore * 0.8);
-        
+
         return { command, score };
       })
       .filter(({ score }) => score > 0)
@@ -53,14 +56,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   const fuzzyMatch = (pattern: string, text: string): number => {
     let score = 0;
     let patternIndex = 0;
-    
-    for (let textIndex = 0; textIndex < text.length && patternIndex < pattern.length; textIndex++) {
+
+    for (
+      let textIndex = 0;
+      textIndex < text.length && patternIndex < pattern.length;
+      textIndex++
+    ) {
       if (text[textIndex] === pattern[patternIndex]) {
         score += 1;
         patternIndex++;
       }
     }
-    
+
     return patternIndex === pattern.length ? score / pattern.length : 0;
   };
 
@@ -85,73 +92,89 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
       if (!isVisible) return;
 
       switch (e.key) {
-        case 'ArrowDown':
+        case "ArrowDown":
           e.preventDefault();
-          setSelectedIndex(prev => 
-            prev < filteredCommands.length - 1 ? prev + 1 : 0
+          setSelectedIndex((prev) =>
+            prev < filteredCommands.length - 1 ? prev + 1 : 0,
           );
           break;
-        case 'ArrowUp':
+        case "ArrowUp":
           e.preventDefault();
-          setSelectedIndex(prev => 
-            prev > 0 ? prev - 1 : filteredCommands.length - 1
+          setSelectedIndex((prev) =>
+            prev > 0 ? prev - 1 : filteredCommands.length - 1,
           );
           break;
-        case 'Enter':
+        case "Enter":
           e.preventDefault();
           if (filteredCommands[selectedIndex]) {
             handleCommandSelect(filteredCommands[selectedIndex]);
           }
           break;
-        case 'Escape':
+        case "Escape":
           e.preventDefault();
           onClose();
           break;
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isVisible, filteredCommands, selectedIndex]);
 
   // Scroll selected item into view
   useEffect(() => {
     if (listRef.current) {
-      const selectedElement = listRef.current.children[selectedIndex] as HTMLElement;
+      const selectedElement = listRef.current.children[
+        selectedIndex
+      ] as HTMLElement;
       if (selectedElement) {
         selectedElement.scrollIntoView({
-          block: 'nearest',
-          behavior: 'smooth'
+          block: "nearest",
+          behavior: "smooth",
         });
       }
     }
   }, [selectedIndex]);
 
   const handleCommandSelect = (command: Command) => {
-    const args = filter.includes(' ') ? filter.split(' ').slice(1).join(' ') : undefined;
+    const args = filter.includes(" ")
+      ? filter.split(" ").slice(1).join(" ")
+      : undefined;
     onCommandSelect(command, args);
     onClose();
   };
 
-  const getCategoryIcon = (category: Command['category']): string => {
+  const getCategoryIcon = (category: Command["category"]): string => {
     switch (category) {
-      case 'file': return '📁';
-      case 'chat': return '💬';
-      case 'code': return '⚡';
-      case 'workspace': return '🏗️';
-      case 'debug': return '🐛';
-      default: return '⚙️';
+      case "file":
+        return "📁";
+      case "chat":
+        return "💬";
+      case "code":
+        return "⚡";
+      case "workspace":
+        return "🏗️";
+      case "debug":
+        return "🐛";
+      default:
+        return "⚙️";
     }
   };
 
-  const getCategoryColor = (category: Command['category']): string => {
+  const getCategoryColor = (category: Command["category"]): string => {
     switch (category) {
-      case 'file': return 'var(--vscode-charts-blue)';
-      case 'chat': return 'var(--vscode-charts-green)';
-      case 'code': return 'var(--vscode-charts-purple)';
-      case 'workspace': return 'var(--vscode-charts-orange)';
-      case 'debug': return 'var(--vscode-charts-red)';
-      default: return 'var(--vscode-foreground)';
+      case "file":
+        return "var(--vscode-charts-blue)";
+      case "chat":
+        return "var(--vscode-charts-green)";
+      case "code":
+        return "var(--vscode-charts-purple)";
+      case "workspace":
+        return "var(--vscode-charts-orange)";
+      case "debug":
+        return "var(--vscode-charts-red)";
+      default:
+        return "var(--vscode-foreground)";
     }
   };
 
@@ -159,7 +182,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   return (
     <div className="command-palette-overlay" onClick={onClose}>
-      <div className="command-palette" onClick={e => e.stopPropagation()}>
+      <div className="command-palette" onClick={(e) => e.stopPropagation()}>
         <div className="command-palette-header">
           <input
             ref={inputRef}
@@ -173,7 +196,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             Press <kbd>Esc</kbd> to close
           </div>
         </div>
-        
+
         <div ref={listRef} className="command-palette-list">
           {filteredCommands.length === 0 ? (
             <div className="command-palette-empty">
@@ -184,12 +207,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
               <div
                 key={`${command.name}-${index}`}
                 className={`command-palette-item ${
-                  index === selectedIndex ? 'selected' : ''
+                  index === selectedIndex ? "selected" : ""
                 }`}
                 onClick={() => handleCommandSelect(command)}
               >
                 <div className="command-item-main">
-                  <span 
+                  <span
                     className="command-item-icon"
                     style={{ color: getCategoryColor(command.category) }}
                   >
@@ -197,7 +220,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                   </span>
                   <div className="command-item-content">
                     <span className="command-item-name">{command.name}</span>
-                    <span className="command-item-description">{command.description}</span>
+                    <span className="command-item-description">
+                      {command.description}
+                    </span>
                   </div>
                 </div>
                 {command.shortcut && (
@@ -209,7 +234,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
             ))
           )}
         </div>
-        
+
         <div className="command-palette-footer">
           <div className="command-palette-stats">
             {filteredCommands.length} of {commands.length} commands

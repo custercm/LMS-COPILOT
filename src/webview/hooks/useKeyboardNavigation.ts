@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from "react";
 
 export interface KeyboardNavigationOptions {
   onArrowUp?: () => void;
@@ -18,69 +18,77 @@ export interface KeyboardNavigationOptions {
 export function useKeyboardNavigation(options: KeyboardNavigationOptions) {
   const containerRef = useRef<HTMLElement>(null);
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    switch (event.key) {
-      case 'ArrowUp':
-        event.preventDefault();
-        options.onArrowUp?.();
-        break;
-      case 'ArrowDown':
-        event.preventDefault();
-        options.onArrowDown?.();
-        break;
-      case 'Enter':
-        if (!event.shiftKey) {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      switch (event.key) {
+        case "ArrowUp":
           event.preventDefault();
-          options.onEnter?.();
-        }
-        break;
-      case 'Escape':
-        event.preventDefault();
-        options.onEscape?.();
-        break;
-      case 'Tab':
+          options.onArrowUp?.();
+          break;
+        case "ArrowDown":
+          event.preventDefault();
+          options.onArrowDown?.();
+          break;
+        case "Enter":
+          if (!event.shiftKey) {
+            event.preventDefault();
+            options.onEnter?.();
+          }
+          break;
+        case "Escape":
+          event.preventDefault();
+          options.onEscape?.();
+          break;
+        case "Tab":
+          if (event.shiftKey) {
+            options.onShiftTab?.();
+          } else {
+            options.onTab?.();
+          }
+          break;
+      }
+    },
+    [options],
+  );
+
+  const trapFocus = useCallback(
+    (event: KeyboardEvent) => {
+      if (!options.trapFocus || !containerRef.current) return;
+
+      const focusableElements = containerRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[
+        focusableElements.length - 1
+      ] as HTMLElement;
+
+      if (event.key === "Tab") {
         if (event.shiftKey) {
-          options.onShiftTab?.();
+          if (document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement?.focus();
+          }
         } else {
-          options.onTab?.();
-        }
-        break;
-    }
-  }, [options]);
-
-  const trapFocus = useCallback((event: KeyboardEvent) => {
-    if (!options.trapFocus || !containerRef.current) return;
-
-    const focusableElements = containerRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-
-    const firstElement = focusableElements[0] as HTMLElement;
-    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-    if (event.key === 'Tab') {
-      if (event.shiftKey) {
-        if (document.activeElement === firstElement) {
-          event.preventDefault();
-          lastElement?.focus();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          event.preventDefault();
-          firstElement?.focus();
+          if (document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement?.focus();
+          }
         }
       }
-    }
-  }, [options.trapFocus]);
+    },
+    [options.trapFocus],
+  );
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    container.addEventListener('keydown', handleKeyDown);
-    
+    container.addEventListener("keydown", handleKeyDown);
+
     if (options.trapFocus) {
-      container.addEventListener('keydown', trapFocus);
+      container.addEventListener("keydown", trapFocus);
     }
 
     if (options.focusOnMount) {
@@ -88,9 +96,9 @@ export function useKeyboardNavigation(options: KeyboardNavigationOptions) {
     }
 
     return () => {
-      container.removeEventListener('keydown', handleKeyDown);
+      container.removeEventListener("keydown", handleKeyDown);
       if (options.trapFocus) {
-        container.removeEventListener('keydown', trapFocus);
+        container.removeEventListener("keydown", trapFocus);
       }
     };
   }, [handleKeyDown, trapFocus, options.focusOnMount, options.trapFocus]);
@@ -104,19 +112,22 @@ export function useKeyboardNavigation(options: KeyboardNavigationOptions) {
 export function useFocusAnnouncement() {
   const announceRef = useRef<HTMLDivElement>(null);
 
-  const announce = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
-    if (announceRef.current) {
-      announceRef.current.setAttribute('aria-live', priority);
-      announceRef.current.textContent = message;
-      
-      // Clear after announcement
-      setTimeout(() => {
-        if (announceRef.current) {
-          announceRef.current.textContent = '';
-        }
-      }, 1000);
-    }
-  }, []);
+  const announce = useCallback(
+    (message: string, priority: "polite" | "assertive" = "polite") => {
+      if (announceRef.current) {
+        announceRef.current.setAttribute("aria-live", priority);
+        announceRef.current.textContent = message;
+
+        // Clear after announcement
+        setTimeout(() => {
+          if (announceRef.current) {
+            announceRef.current.textContent = "";
+          }
+        }, 1000);
+      }
+    },
+    [],
+  );
 
   return { announce, announceRef };
 }
