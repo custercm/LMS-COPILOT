@@ -1,0 +1,2 @@
+Update to be able to see a drop down of all local models
+maybe when the dropdown is clicked, it triggers some sort of update model registry and show options or something?  that way as people get better models etc they dont have to update the lists themselves, maybe it also allows for when you switch it automatically switches the model in LM Studio??? I feel like that would be important
