@@ -71,11 +71,10 @@ export function activate(context: vscode.ExtensionContext) {
   const startChatDisposable = vscode.commands.registerCommand(
     "lms-copilot.startChat",
     async () => {
-      // Use PanelManager to create and manage the chat panel
-      panelManager.createPanel();
-
-      // The PanelManager will handle webview content and communication
-      // Additional integration could be added here for specific features
+      // Focus the sidebar view instead of creating a separate panel
+      await vscode.commands.executeCommand(
+        "workbench.view.extension.lmsCopilotContainer",
+      );
     },
   );
 
@@ -181,8 +180,148 @@ export function activate(context: vscode.ExtensionContext) {
     },
   );
 
+  // Command to send selected text to LMS Copilot
+  const sendToChatDisposable = vscode.commands.registerCommand(
+    "lms-copilot.sendToChat",
+    async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showErrorMessage("No active editor found");
+        return;
+      }
+
+      const selection = editor.selection;
+      const selectedText = editor.document.getText(selection);
+      
+      if (!selectedText) {
+        vscode.window.showErrorMessage("No text selected");
+        return;
+      }
+
+      // Focus the LMS Copilot chat and send the message
+      await vscode.commands.executeCommand("workbench.view.extension.lmsCopilotContainer");
+      
+      // Send message to our chat provider
+      chatProvider.sendMessageToWebview({
+        command: 'addMessage',
+        text: `Please analyze this code:\n\`\`\`\n${selectedText}\n\`\`\``
+      });
+    }
+  );
+
+  // Command to explain selected code
+  const explainCodeDisposable = vscode.commands.registerCommand(
+    "lms-copilot.explainCode",
+    async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showErrorMessage("No active editor found");
+        return;
+      }
+
+      const selection = editor.selection;
+      const selectedText = editor.document.getText(selection);
+      
+      if (!selectedText) {
+        vscode.window.showErrorMessage("No text selected");
+        return;
+      }
+
+      // Focus the LMS Copilot chat and send the message
+      await vscode.commands.executeCommand("workbench.view.extension.lmsCopilotContainer");
+      
+      // Send message to our chat provider
+      chatProvider.sendMessageToWebview({
+        command: 'addMessage',
+        text: `Please explain this code in detail:\n\`\`\`\n${selectedText}\n\`\`\``
+      });
+    }
+  );
+
+  // Command to debug selected code
+  const debugCodeDisposable = vscode.commands.registerCommand(
+    "lms-copilot.debugCode",
+    async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showErrorMessage("No active editor found");
+        return;
+      }
+
+      const selection = editor.selection;
+      const selectedText = editor.document.getText(selection);
+      
+      if (!selectedText) {
+        vscode.window.showErrorMessage("No text selected");
+        return;
+      }
+
+      // Focus the LMS Copilot chat and send the message
+      await vscode.commands.executeCommand("workbench.view.extension.lmsCopilotContainer");
+      
+      // Send message to our chat provider
+      chatProvider.sendMessageToWebview({
+        command: 'addMessage',
+        text: `Please help me debug this code and identify potential issues:\n\`\`\`\n${selectedText}\n\`\`\``
+      });
+    }
+  );
+
+  // Register chat participant for integration with GitHub Copilot Chat
+  let chatParticipant: vscode.ChatParticipant | undefined;
+  
+  try {
+    chatParticipant = vscode.chat.createChatParticipant("lms", async (request, context, stream, token) => {
+      try {
+        // Extract the user's message
+        const userMessage = request.prompt;
+        
+        // Send typing indicator
+        stream.progress("Thinking...");
+        
+        // Process the message through our agent system
+        const response = await agentManager.processMessage(userMessage);
+        
+        // Stream the response back
+        stream.markdown(response || "I'm ready to help! What would you like to know?");
+        
+      } catch (error) {
+        console.error("Chat participant error:", error);
+        stream.markdown("Sorry, I encountered an error. Please try again.");
+      }
+    });
+    
+    if (chatParticipant) {
+      chatParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'icon.png');
+      chatParticipant.followupProvider = {
+        provideFollowups(result, context, token) {
+          return [
+            {
+              prompt: "Can you explain this code?",
+              label: "💡 Explain Code",
+              command: "explain"
+            },
+            {
+              prompt: "Help me debug this",
+              label: "🐛 Debug Help", 
+              command: "debug"
+            },
+            {
+              prompt: "Write tests for this",
+              label: "🧪 Write Tests",
+              command: "test"
+            }
+          ];
+        }
+      };
+    }
+  } catch (error) {
+    console.log("Chat participant not available in this VS Code version:", error);
+    chatParticipant = undefined;
+  }
+
   // PRESERVE ALL EXISTING DISPOSABLES
-  context.subscriptions.push(
+  const disposables = [
     startChatDisposable,
     togglePanelDisposable,
     switchPanelPositionDisposable,
@@ -194,7 +333,17 @@ export function activate(context: vscode.ExtensionContext) {
     clearCacheDisposable,
     showCacheStatsDisposable,
     testModelsDisposable,
-  );
+    sendToChatDisposable,
+    explainCodeDisposable,
+    debugCodeDisposable,
+  ];
+
+  // Add chat participant if available
+  if (chatParticipant) {
+    disposables.push(chatParticipant);
+  }
+
+  context.subscriptions.push(...disposables);
 }
 
 // Add mock VS Code API for testing

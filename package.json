@@ -3,8 +3,10 @@
   "displayName": "LMS Copilot",
   "description": "GitHub Copilot replica powered by local LM Studio AI - complete privacy and control",
   "version": "1.0.0",
+  "publisher": "custercm",
+  "main": "./dist/extension.js",
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "AI",
@@ -12,17 +14,15 @@
     "Machine Learning"
   ],
   "activationEvents": [
-    "onStartupFinished",
-    "onLanguage"
+    "onStartupFinished"
   ],
-  "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
-      "panel": [
+      "activitybar": [
         {
           "id": "lmsCopilotContainer",
-          "title": "LMS Copilot",
-          "icon": "$(robot)"
+          "title": "LMS Copilot AI",
+          "icon": "$(sparkle)"
         }
       ]
     },
@@ -31,10 +31,19 @@
         {
           "type": "webview",
           "id": "lmsCopilotChat",
-          "name": "LMS Copilot Chat"
+          "name": "LMS Copilot Chat",
+          "icon": "$(sparkle)"
         }
       ]
     },
+    "chatParticipants": [
+      {
+        "id": "lms",
+        "name": "lms",
+        "description": "LMS Copilot AI assistant powered by local LM Studio",
+        "isSticky": true
+      }
+    ],
     "commands": [
       {
         "command": "lms-copilot.startChat",
@@ -72,6 +81,21 @@
         "category": "LMS Copilot"
       },
       {
+        "command": "lms-copilot.sendToChat",
+        "title": "Send to LMS Copilot",
+        "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.explainCode",
+        "title": "LMS: Explain Code",
+        "category": "LMS Copilot"
+      },
+      {
+        "command": "lms-copilot.debugCode",
+        "title": "LMS: Debug Code", 
+        "category": "LMS Copilot"
+      },
+      {
         "command": "lms-copilot.switchPanelPosition",
         "title": "Switch Panel Position",
         "category": "LMS Copilot"
@@ -82,6 +106,26 @@
         "category": "LMS Copilot"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorTextFocus",
+          "command": "lms-copilot.explainCode",
+          "group": "1_modification@1"
+        },
+        {
+          "when": "editorTextFocus", 
+          "command": "lms-copilot.debugCode",
+          "group": "1_modification@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "lms-copilot.sendToChat",
+          "when": "editorTextFocus"
+        }
+      ]
+    },
     "configuration": {
       "title": "LMS Copilot",
       "properties": {
