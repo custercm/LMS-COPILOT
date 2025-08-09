@@ -5,7 +5,9 @@ import * as vscode from "vscode";
 // Utility function to read files using Node.js file system API
 export async function readFile(filePath: string): Promise<string> {
   try {
-    return fs.readFileSync(path.resolve(filePath), "utf8");
+    const fileUri = vscode.Uri.file(path.resolve(filePath));
+    const buffer = await vscode.workspace.fs.readFile(fileUri);
+    return Buffer.from(buffer).toString('utf8');
   } catch (error) {
     throw new Error(
       `Failed to read file ${filePath}: ${(error as Error).message}`,
@@ -19,10 +21,28 @@ export async function writeFile(
   content: string,
 ): Promise<void> {
   try {
-    await fs.promises.writeFile(path.resolve(filePath), content, "utf8");
+    const fileUri = vscode.Uri.file(path.resolve(filePath));
+    const fileContent = Buffer.from(content, 'utf8');
+    await vscode.workspace.fs.writeFile(fileUri, fileContent);
   } catch (error) {
     throw new Error(
       `Failed to write file ${filePath}: ${(error as Error).message}`,
+    );
+  }
+}
+
+// Utility function to create files using VS Code workspace API (proper approach)
+export async function createFile(
+  filePath: string,
+  content: string,
+): Promise<void> {
+  try {
+    const fileUri = vscode.Uri.file(path.resolve(filePath));
+    const fileContent = Buffer.from(content, 'utf8');
+    await vscode.workspace.fs.writeFile(fileUri, fileContent);
+  } catch (error) {
+    throw new Error(
+      `Failed to create file ${filePath}: ${(error as Error).message}`,
     );
   }
 }
@@ -463,7 +483,7 @@ async function analyzeDataFile(filePath: string): Promise<any> {
     const tagMatches = content.match(/<(\w+)/g) || [];
     return {
       elementCount: tagMatches.length,
-      uniqueElements: [...new Set(tagMatches.map((tag) => tag.substring(1)))]
+      uniqueElements: Array.from(new Set(tagMatches.map((tag) => tag.substring(1))))
         .length,
     };
   }

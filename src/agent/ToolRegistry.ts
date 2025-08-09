@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { createFile, writeFile, readFile, editFile } from "../tools/FileOperations";
 
 interface Tool {
   name: string;
@@ -97,15 +98,48 @@ class ToolRegistry {
     // Register file operations tool
     this.register({
       name: "file-operations",
-      description: "Read, write, and manipulate files",
+      description: "Read, write, create, and manipulate files",
       securityLevel: "medium" as const,
       execute: async (params: {
         operation: string;
         filePath: string;
         content?: string;
+        startLine?: number;
+        endLine?: number;
       }) => {
-        // Basic file operations implementation
-        return `File operation ${params.operation} on ${params.filePath}`;
+        try {
+          switch (params.operation) {
+            case "create":
+              if (!params.content) {
+                throw new Error("Content is required for file creation");
+              }
+              await createFile(params.filePath, params.content);
+              return `File created successfully: ${params.filePath}`;
+              
+            case "write":
+              if (!params.content) {
+                throw new Error("Content is required for file writing");
+              }
+              await writeFile(params.filePath, params.content);
+              return `File written successfully: ${params.filePath}`;
+              
+            case "read":
+              const content = await readFile(params.filePath);
+              return content;
+              
+            case "edit":
+              if (!params.content || !params.startLine || !params.endLine) {
+                throw new Error("Content, startLine, and endLine are required for file editing");
+              }
+              await editFile(params.filePath, params.startLine, params.endLine, params.content);
+              return `File edited successfully: ${params.filePath}`;
+              
+            default:
+              throw new Error(`Unknown file operation: ${params.operation}`);
+          }
+        } catch (error) {
+          throw new Error(`File operation failed: ${(error as Error).message}`);
+        }
       },
     });
 

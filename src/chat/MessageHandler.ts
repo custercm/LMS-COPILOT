@@ -1,15 +1,18 @@
 import { ChatProvider } from "./ChatProvider";
 import { ChatPanel } from "./ChatPanel";
 import { AgentManager } from "../agent/AgentManager";
+import { AIResponseParser, ParsedAction } from "../utils/aiResponseParser";
 import * as vscode from "vscode";
 
 export class MessageHandler {
   private chatProvider: ChatProvider | null = null;
   private chatPanel: ChatPanel | null = null;
   private agentManager: AgentManager;
+  private aiResponseParser: AIResponseParser;
 
   constructor(agentManager: AgentManager) {
     this.agentManager = agentManager;
+    this.aiResponseParser = new AIResponseParser();
   }
 
   // Set the chat provider for webview view integration
@@ -116,6 +119,11 @@ export class MessageHandler {
       .getConversationHistory()
       .addMessage("assistant", response);
 
+    // Check if auto file creation is enabled and parse response for actions
+    if (await this.isAutoFileCreationEnabled()) {
+      await this.processResponseActions(response);
+    }
+
     // Add response to display with null safety
     if (this.chatPanel) {
       this.chatPanel.addMessage("assistant", response);
@@ -209,5 +217,98 @@ You can also ask me anything about your code, and I'll help you with:
   private async getCurrentModel(): Promise<string> {
     const config = vscode.workspace.getConfiguration("lmsCopilot");
     return config.get("model", "llama3");
+  }
+
+  /**
+   * Check if auto file creation is enabled in settings
+   */
+  private async isAutoFileCreationEnabled(): Promise<boolean> {
+    const config = vscode.workspace.getConfiguration("lmsCopilot");
+    return config.get("enableAutoFileCreation", false);
+  }
+
+  /**
+   * Process AI response for actionable patterns and execute them
+   */
+  private async processResponseActions(response: string): Promise<void> {
+    try {
+      const parseResult = this.aiResponseParser.parseForActions(response);
+      
+      if (!parseResult.hasActionableContent) {
+        return;
+      }
+
+      console.log(`MessageHandler: Found ${parseResult.actions.length} actionable patterns in AI response`);
+
+      for (const action of parseResult.actions) {
+        await this.executeAction(action);
+      }
+    } catch (error) {
+      console.error("MessageHandler: Error processing response actions:", error);
+    }
+  }
+
+  /**
+   * Execute a parsed action from AI response
+   */
+  private async executeAction(action: ParsedAction): Promise<void> {
+    try {
+      switch (action.type) {
+        case 'createFile':
+          if (action.filePath) {
+            await this.executeFileCreation(action.filePath, action.content || '');
+          }
+          break;
+        case 'modifyFile':
+          if (action.filePath && action.content !== undefined) {
+            await this.executeFileModification(action.filePath, action.content, action.lineRange);
+          }
+          break;
+        case 'runCommand':
+          if (action.command) {
+            await this.executeCommand(action.command);
+          }
+          break;
+        default:
+          console.log(`MessageHandler: Unsupported action type: ${action.type}`);
+      }
+    } catch (error) {
+      console.error(`MessageHandler: Error executing action ${action.type}:`, error);
+    }
+  }
+
+  /**
+   * Execute file creation action
+   */
+  private async executeFileCreation(filePath: string, content: string | undefined): Promise<void> {
+    if (this.chatProvider) {
+      // Use ChatProvider's public external file creation method
+      await this.chatProvider.createFileExternal(filePath, content || '');
+      console.log(`MessageHandler: Auto-created file ${filePath}`);
+    } else {
+      console.warn("MessageHandler: Cannot create file - no ChatProvider available");
+    }
+  }
+
+  /**
+   * Execute file modification action
+   */
+  private async executeFileModification(
+    filePath: string, 
+    content: string, 
+    lineRange?: { start: number; end: number }
+  ): Promise<void> {
+    // For now, log the action - full implementation would require workspace API
+    console.log(`MessageHandler: Auto-modify file ${filePath}`, { content, lineRange });
+    // TODO: Implement actual file modification logic
+  }
+
+  /**
+   * Execute command action
+   */
+  private async executeCommand(command: string): Promise<void> {
+    // For now, log the action - full implementation would require security validation
+    console.log(`MessageHandler: Auto-execute command: ${command}`);
+    // TODO: Implement actual command execution with security checks
   }
 }

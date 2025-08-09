@@ -114,9 +114,41 @@ export class TaskExecutor {
 
   // Method for executing a single task step by step
   async executeTask(task: Task): Promise<any> {
+    // Use ToolRegistry for file operations if detected
+    const toolRegistry = (this as any).toolRegistry || (globalThis as any).toolRegistry;
+    const desc = task.description.toLowerCase();
+    const fileTool = toolRegistry && toolRegistry.getTool && toolRegistry.getTool("file-operations");
+    // Simple pattern matching for file operations
+    const createMatch = desc.match(/create (.+) with content (["'])([\s\S]*?)\2/);
+    const writeMatch = desc.match(/write to (.+) (["'])([\s\S]*?)\2/);
+    const editMatch = desc.match(/edit (.+) lines (\d+)-(\d+) (["'])([\s\S]*?)\4/);
+    const readMatch = desc.match(/read (.+)/);
     try {
-      const result = await this.client.executeAgentTask(task.description);
-      return { success: true, data: result };
+      if (fileTool && createMatch) {
+        const filePath = createMatch[1].trim();
+        const content = createMatch[3];
+        await fileTool.execute({ operation: "create", filePath, content });
+        return { success: true, data: `File ${filePath} created.` };
+      } else if (fileTool && writeMatch) {
+        const filePath = writeMatch[1].trim();
+        const content = writeMatch[3];
+        await fileTool.execute({ operation: "write", filePath, content });
+        return { success: true, data: `File ${filePath} written.` };
+      } else if (fileTool && editMatch) {
+        const filePath = editMatch[1].trim();
+        const startLine = parseInt(editMatch[2], 10);
+        const endLine = parseInt(editMatch[3], 10);
+        const content = editMatch[5];
+        await fileTool.execute({ operation: "edit", filePath, content, startLine, endLine });
+        return { success: true, data: `File ${filePath} edited.` };
+      } else if (fileTool && readMatch) {
+        const filePath = readMatch[1].trim();
+        const content = await fileTool.execute({ operation: "read", filePath });
+        return { success: true, data: content };
+      } else {
+        const result = await this.client.executeAgentTask(task.description);
+        return { success: true, data: result };
+      }
     } catch (error) {
       return { success: false, error: (error as Error).message };
     }

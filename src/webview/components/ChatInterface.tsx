@@ -6,6 +6,7 @@ import CommandPalette, { Command } from "./CommandPalette";
 import ContextualMenu, { ContextMenuItem } from "./ContextualMenu";
 import EnhancedTooltip from "./EnhancedTooltip";
 import SkeletonLoader from "./SkeletonLoader";
+import SecurityPrompt, { RiskLevel } from "./SecurityPrompt";
 import {
   ChatResponse,
   ExtensionMessage,
@@ -30,6 +31,17 @@ const ChatInterface: React.FC = () => {
   const [notification, setNotification] = useState<{
     type: "success" | "error";
     message: string;
+  } | null>(null);
+
+  // Security prompt state
+  const [securityPrompt, setSecurityPrompt] = useState<{
+    visible: boolean;
+    promptId: string;
+    command: string;
+    riskLevel: RiskLevel;
+    description: string;
+    operation: string;
+    path: string;
   } | null>(null);
 
   // Context menu state
@@ -265,6 +277,22 @@ const ChatInterface: React.FC = () => {
           console.error(message.message);
           setNotification({ type: "error", message: message.message });
           break;
+        case "securityPrompt":
+          setSecurityPrompt({
+            visible: true,
+            promptId: message.promptId,
+            command: message.commandToApprove,
+            riskLevel: message.riskLevel,
+            description: message.description,
+            operation: message.operation,
+            path: message.path
+          });
+          break;
+        case "hideSecurityPrompt":
+          if (securityPrompt?.promptId === message.promptId) {
+            setSecurityPrompt(null);
+          }
+          break;
       }
     };
 
@@ -369,6 +397,40 @@ const ChatInterface: React.FC = () => {
       // Process uploaded files
       console.log("Files attached:", e.target.files);
       // In a real implementation, you would send the file to backend for processing
+    }
+  };
+
+  // Security prompt handlers
+  const handleSecurityApprove = () => {
+    if (securityPrompt) {
+      webviewApi.sendMessage({
+        command: "securityApproval",
+        promptId: securityPrompt.promptId,
+        approved: true,
+        alwaysAllow: false
+      });
+    }
+  };
+
+  const handleSecurityDeny = () => {
+    if (securityPrompt) {
+      webviewApi.sendMessage({
+        command: "securityApproval",
+        promptId: securityPrompt.promptId,
+        approved: false,
+        alwaysAllow: false
+      });
+    }
+  };
+
+  const handleSecurityAlwaysAllow = () => {
+    if (securityPrompt) {
+      webviewApi.sendMessage({
+        command: "securityApproval",
+        promptId: securityPrompt.promptId,
+        approved: true,
+        alwaysAllow: true
+      });
     }
   };
 
@@ -522,6 +584,19 @@ const ChatInterface: React.FC = () => {
           </button>
         </EnhancedTooltip>
       </div>
+
+      {/* Security Prompt */}
+      {securityPrompt && (
+        <SecurityPrompt
+          command={securityPrompt.command}
+          riskLevel={securityPrompt.riskLevel}
+          description={securityPrompt.description}
+          onApprove={handleSecurityApprove}
+          onDeny={handleSecurityDeny}
+          onAlwaysAllow={handleSecurityAlwaysAllow}
+          isVisible={securityPrompt.visible}
+        />
+      )}
 
       {/* Enhanced Input Area with comprehensive accessibility */}
       <InputArea

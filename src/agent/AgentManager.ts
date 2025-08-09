@@ -127,9 +127,8 @@ export class AgentManager {
   // This function already exists in the original code
   async saveFileChanges(changes: any[]): Promise<void> {
     for (const change of changes) {
-      const fs = require("fs");
       try {
-        fs.writeFileSync(change.path, change.content);
+        await FileOperations.writeFile(change.path, change.content);
       } catch (error) {
         console.error(`Error saving changes to ${change.path}:`, error);
       }

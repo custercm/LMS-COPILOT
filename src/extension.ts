@@ -28,10 +28,12 @@ export function activate(context: vscode.ExtensionContext) {
     context.extensionUri,
     messageHandler,
     agentManager,
+    context,
   );
 
   // PHASE 4: Wire Bidirectional References (After All Objects Exist)
   chatProvider.wireMessageHandler();
+  chatProvider.setExtensionContext(context);
 
   // PHASE 5: Create Panel Manager and Wire Dependencies
   const panelManager = new PanelManager(

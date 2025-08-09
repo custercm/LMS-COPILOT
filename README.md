@@ -48,11 +48,7 @@ A VS Code extension that replicates GitHub Copilot's functionality using LM Stud
 
 ## Documentation
 
-Additional documentation is available in the `/docs` folder:
-- [Personal Use Guide](docs/PERSONAL_USE_GUIDE.md)
-- [Launch Instructions](docs/LAUNCH_INSTRUCTIONS.md)
-- [Changelog](docs/CHANGELOG.md)
-- [Future Additions](docs/FUTURE_ADDITIONS/)
+Additional documentation is available in the `/docs` folder.
 
 ## Architecture
 

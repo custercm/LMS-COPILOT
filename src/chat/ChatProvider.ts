@@ -20,6 +20,7 @@ import {
 } from "../security/AdaptiveSecurity";
 import { MessageHandler } from "./MessageHandler";
 import { AgentManager } from "../agent/AgentManager";
+import { ConversationStorage } from "../storage/ConversationStorage";
 
 export class ChatProvider implements vscode.WebviewViewProvider {
   private _webviewView: vscode.WebviewView | undefined;
@@ -33,17 +34,33 @@ export class ChatProvider implements vscode.WebviewViewProvider {
   private extensionUri: vscode.Uri;
   private messageHandler: MessageHandler;
   private agentManager: AgentManager;
+  private conversationStorage: ConversationStorage;
   private webviewReady: boolean = false;
   private pendingMessages: any[] = [];
+  private pendingApprovals = new Map<string, {
+    resolve: (approved: boolean) => void;
+    command: string;
+    operation: string;
+    path: string;
+  }>();
 
   constructor(
     client: LMStudioClient,
     extensionUri: vscode.Uri,
     messageHandler?: MessageHandler,
     agentManager?: AgentManager,
+    context?: vscode.ExtensionContext,
   ) {
     this.client = client;
     this.extensionUri = extensionUri;
+
+    // Initialize conversation storage (will be set by setContext if context provided)
+    if (context) {
+      this.conversationStorage = new ConversationStorage(context);
+    } else {
+      // Initialize with a minimal context for now - will be set later
+      this.conversationStorage = {} as ConversationStorage;
+    }
 
     // Initialize LM Studio components
     this.modelManager = new ModelManager();
@@ -75,6 +92,50 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     if (this.messageHandler) {
       this.messageHandler.setChatProvider(this);
     }
+  }
+
+  // Set the extension context for conversation storage
+  public setExtensionContext(context: vscode.ExtensionContext): void {
+    this.conversationStorage = new ConversationStorage(context);
+  }
+
+  // Get conversation storage instance (for other components)
+  public getConversationStorage(): ConversationStorage {
+    return this.conversationStorage;
+  }
+
+  // Handle request for conversation storage from webview
+  private async handleRequestConversationStorage(): Promise<void> {
+    if (!this._webviewView || !this.conversationStorage) return;
+
+    try {
+      // For security reasons, we can't send the storage instance directly
+      // Instead, send the feature flags and conversation metadata
+      const featureFlags = await this.conversationStorage.getAllFeatureFlags();
+      const conversations = await this.conversationStorage.getConversationMetadata();
+      const activeConversationId = await this.conversationStorage.getActiveConversationId();
+
+      this._webviewView.webview.postMessage({
+        command: "conversationStorageReady",
+        featureFlags,
+        conversations,
+        activeConversationId
+      });
+    } catch (error) {
+      console.error('Failed to handle conversation storage request:', error);
+      this._webviewView.webview.postMessage({
+        command: "conversationStorageError",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Public method for external file creation (used by MessageHandler)
+   */
+  public async createFileExternal(filePath: string, content: string): Promise<void> {
+    const requestId = `external-${Date.now()}`;
+    await this.handleCreateFileViaTools(filePath, content, requestId);
   }
 
   public async resolveWebviewView(
@@ -163,6 +224,9 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         case "sendMessage":
           await this.handleSendMessage(sanitizedMessage.text);
           return;
+        case "requestConversationStorage":
+          await this.handleRequestConversationStorage();
+          return;
         case "getModels":
           await this.handleGetModels();
           return;
@@ -203,10 +267,18 @@ export class ChatProvider implements vscode.WebviewViewProvider {
           );
           return;
         case "createFile":
-          await this.handleCreateFile(
+          // Route file creation through proper tools system
+          await this.handleCreateFileViaTools(
             sanitizedMessage.filePath,
             sanitizedMessage.content,
             sanitizedMessage.requestId,
+          );
+          return;
+        case "securityApproval":
+          await this.handleSecurityApproval(
+            sanitizedMessage.promptId,
+            sanitizedMessage.approved,
+            sanitizedMessage.alwaysAllow
           );
           return;
         case "openFile":
@@ -358,6 +430,29 @@ export class ChatProvider implements vscode.WebviewViewProvider {
       // Show typing indicator while waiting for response
       this.appendTypingIndicator();
 
+      // Save user message to conversation storage if enabled
+      if (this.conversationStorage && await this.conversationStorage.isFeatureEnabled('conversationPersistence')) {
+        try {
+          const activeConversation = await this.conversationStorage.getActiveConversation();
+          if (activeConversation) {
+            // Add user message to existing conversation
+            const userMessage = {
+              id: `msg-${Date.now()}`,
+              role: 'user' as const,
+              content: sanitizedMessage,
+              timestamp: Date.now()
+            };
+            activeConversation.messages.push(userMessage);
+            await this.conversationStorage.saveConversation(activeConversation);
+          } else {
+            // Create new conversation with user message
+            await this.conversationStorage.createNewConversation(sanitizedMessage);
+          }
+        } catch (error) {
+          console.warn('Failed to save user message to conversation storage:', error);
+        }
+      }
+
       // Initialize streaming handler
       let streamingResponse = "";
       this.streamHandler = new StreamHandler(this.client, (chunk: string) => {
@@ -398,6 +493,28 @@ export class ChatProvider implements vscode.WebviewViewProvider {
 
         // Remove typing indicator after response is complete
         this.removeTypingIndicator();
+
+        // Save AI response to conversation storage if enabled
+        if (this.conversationStorage && await this.conversationStorage.isFeatureEnabled('conversationPersistence')) {
+          try {
+            const activeConversation = await this.conversationStorage.getActiveConversation();
+            if (activeConversation) {
+              const assistantMessage = {
+                id: `msg-${Date.now()}-assistant`,
+                role: 'assistant' as const,
+                content: response,
+                timestamp: Date.now()
+              };
+              activeConversation.messages.push(assistantMessage);
+              activeConversation.lastMessage = response.slice(0, 100) + (response.length > 100 ? '...' : '');
+              activeConversation.lastUpdated = new Date();
+              activeConversation.messageCount = activeConversation.messages.length;
+              await this.conversationStorage.saveConversation(activeConversation);
+            }
+          } catch (error) {
+            console.warn('Failed to save AI response to conversation storage:', error);
+          }
+        }
 
         // Post the response back to the webview
         this._webviewView.webview.postMessage({
@@ -587,10 +704,15 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         this.securityManager.validateTerminalCommand(code);
       if (!validationResult.isValid) {
         if (validationResult.requiresApproval) {
-          const approved = await this.permissionsManager.requestUserPermission(
+          // Determine risk level based on security assessment
+          const riskAssessment = (this.securityManager as any).assessRisk?.(code);
+          const riskLevel = riskAssessment?.level >= 3 ? "high" : riskAssessment?.level >= 2 ? "medium" : "low";
+          
+          const approved = await this.requestWebviewPermission(
+            code,
             "execute terminal command",
             "terminal",
-            `Execute command: ${code}`,
+            riskLevel
           );
 
           if (approved) {
@@ -783,6 +905,105 @@ export class ChatProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  private async handleCreateFileViaTools(
+    filePath: string,
+    content: string,
+    requestId: string,
+  ): Promise<void> {
+    if (!this._webviewView) return;
+
+    try {
+      // Validate file path and content
+      if (!filePath || !filePath.trim()) {
+        throw new Error("Invalid file path provided");
+      }
+
+      const sanitizedContent = this.adaptiveSecurity.sanitizeInput(content);
+      const sanitizedPath = this.adaptiveSecurity.sanitizeInput(filePath);
+
+      if (!this._validateFileOperation(sanitizedContent)) {
+        throw new Error("Invalid file content detected");
+      }
+
+      // Check permissions for file creation (if enabled by adaptive security)
+      if (this.adaptiveSecurity.shouldCheckFilePermissions()) {
+        const permissionResult = await this.permissionsManager.checkPermission(
+          sanitizedPath,
+          "WRITE",
+        );
+        if (!permissionResult.allowed) {
+          if (permissionResult.requiresUserConfirmation) {
+            const approved =
+              await this.permissionsManager.requestUserPermission(
+                "create file",
+                sanitizedPath,
+                `Create file: ${sanitizedPath}`,
+              );
+
+            if (!approved) {
+              throw new Error(
+                `File creation denied: ${permissionResult.reason}`,
+              );
+            }
+          } else {
+            throw new Error(`File creation denied: ${permissionResult.reason}`);
+          }
+        }
+      }
+
+      // Log the file creation attempt (if audit logging enabled)
+      if (this.adaptiveSecurity.shouldLogAudit()) {
+        this.securityManager.logAuditEvent({
+          type: "file_creation",
+          timestamp: new Date(),
+          approved: true,
+          details: { filePath: sanitizedPath, requestId },
+        });
+      }
+
+      // Route through proper tools system: AgentManager -> ToolRegistry -> FileOperations
+      const toolRegistry = this.agentManager.getToolRegistry();
+      const fileOperationsTool = toolRegistry.getTool("file-operations");
+
+      if (fileOperationsTool) {
+        // Execute file creation through the registered tool
+        await fileOperationsTool.execute({
+          operation: "create",
+          filePath: sanitizedPath,
+          content: sanitizedContent,
+        });
+
+        this._webviewView.webview.postMessage({
+          command: "showNotification",
+          message: `File created successfully: ${sanitizedPath}`,
+        });
+      } else {
+        throw new Error("File operations tool not available");
+      }
+    } catch (error) {
+      console.error("Error creating file via tools:", error);
+
+      // Log audit event only if audit logging enabled
+      if (this.adaptiveSecurity.shouldLogAudit()) {
+        this.securityManager.logAuditEvent({
+          type: "file_creation_failed",
+          timestamp: new Date(),
+          approved: false,
+          details: {
+            filePath,
+            requestId,
+            error: error instanceof Error ? error.message : "Unknown error",
+          },
+        });
+      }
+
+      this._webviewView.webview.postMessage({
+        command: "handleError",
+        message: `Failed to create file: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
+    }
+  }
+
   private async handleCreateFile(
     filePath: string,
     content: string,
@@ -839,11 +1060,19 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         });
       }
 
-      // In a real implementation, this would actually create the file
-      // For now, we just simulate success
+      // Route file creation through proper tools system instead of direct implementation
+      // This method is now deprecated - use handleCreateFileViaTools instead
+      const fileCreationRequest = {
+        command: "createFile",
+        filePath: sanitizedPath,
+        content: sanitizedContent,
+        requestId: requestId
+      };
+
+      // Show deprecated notice - this method should not be used anymore
       this._webviewView.webview.postMessage({
         command: "showNotification",
-        message: `File ${sanitizedPath} created successfully`,
+        message: `[DEPRECATED] Old file creation method called: ${sanitizedPath}`,
       });
     } catch (error) {
       console.error("Error creating file:", error);
@@ -866,6 +1095,120 @@ export class ChatProvider implements vscode.WebviewViewProvider {
         command: "handleError",
         message: `Failed to create file: ${error instanceof Error ? error.message : "Unknown error"}`,
       });
+    }
+  }
+
+  /**
+   * Handle security approval responses from webview
+   */
+  private async handleSecurityApproval(
+    promptId: string, 
+    approved: boolean, 
+    alwaysAllow?: boolean
+  ): Promise<void> {
+    try {
+      const pendingApproval = this.pendingApprovals.get(promptId);
+      if (!pendingApproval) {
+        console.warn(`No pending approval found for promptId: ${promptId}`);
+        return;
+      }
+
+      // Remove from pending approvals
+      this.pendingApprovals.delete(promptId);
+
+      // Hide the security prompt in the UI
+      this._webviewView?.webview.postMessage({
+        command: "hideSecurityPrompt",
+        promptId
+      });
+
+      // If always allow is selected, add to approved commands
+      if (approved && alwaysAllow) {
+        this.securityManager.approveCommand(pendingApproval.command);
+      }
+
+      // Log the approval decision
+      this.securityManager.logAuditEvent({
+        type: "user_permission_request",
+        filePath: pendingApproval.path,
+        timestamp: new Date(),
+        approved,
+        details: { 
+          operation: pendingApproval.operation, 
+          command: pendingApproval.command,
+          alwaysAllow: alwaysAllow || false
+        },
+      });
+
+      // Resolve the promise with the approval decision
+      pendingApproval.resolve(approved);
+    } catch (error) {
+      console.error("Error handling security approval:", error);
+      
+      // Still resolve the pending approval to prevent hanging
+      const pendingApproval = this.pendingApprovals.get(promptId);
+      if (pendingApproval) {
+        this.pendingApprovals.delete(promptId);
+        pendingApproval.resolve(false); // Default to deny on error
+      }
+    }
+  }
+
+  /**
+   * Request user permission through webview security prompt
+   */
+  private async requestWebviewPermission(
+    command: string,
+    operation: string,
+    path: string,
+    riskLevel: "low" | "medium" | "high" = "medium"
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      const promptId = `security-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Store the pending approval
+      this.pendingApprovals.set(promptId, {
+        resolve,
+        command,
+        operation,
+        path
+      });
+
+      // Send security prompt to webview
+      this._webviewView?.webview.postMessage({
+        command: "securityPrompt",
+        promptId,
+        commandToApprove: command,
+        riskLevel,
+        description: this.getSecurityDescription(command, operation, path),
+        operation,
+        path
+      });
+
+      // Set a timeout to prevent hanging indefinitely
+      setTimeout(() => {
+        if (this.pendingApprovals.has(promptId)) {
+          this.pendingApprovals.delete(promptId);
+          this._webviewView?.webview.postMessage({
+            command: "hideSecurityPrompt",
+            promptId
+          });
+          resolve(false); // Default to deny after timeout
+        }
+      }, 30000); // 30 second timeout
+    });
+  }
+
+  /**
+   * Generate security description for the prompt
+   */
+  private getSecurityDescription(command: string, operation: string, path: string): string {
+    if (operation === "execute terminal command") {
+      return `This command will be executed in your terminal. Please review it carefully for security risks.`;
+    } else if (operation.includes("file")) {
+      return `This operation will ${operation.replace(/^(create|read|write|delete)\s+file/, '$1')} the file: ${path}`;
+    } else {
+      return `LMS Copilot wants to ${operation} on "${path}". Please approve or deny this action.`;
     }
   }
 

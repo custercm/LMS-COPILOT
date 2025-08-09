@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import ChatInterface from "./components/ChatInterface";
+import ConversationSidebar from "./components/ConversationSidebar";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ConnectionStatus from "./components/ConnectionStatus";
 import { OfflineProvider, OfflineBanner } from "./hooks/useOfflineMode";
 import useWebviewApi from "./hooks/useWebviewApi";
 import useMemoryManager from "./hooks/useMemoryManager";
+import { useFeatureFlags } from "./utils/featureFlags";
 import { errorLogger } from "./utils/errorLogger";
 
 interface Message {
@@ -23,6 +25,13 @@ const App = React.memo(() => {
     cleanupInterval: 60000,
     memoryThreshold: 100 * 1024 * 1024, // 100MB
   });
+
+  // Feature flags
+  const { isEnabled } = useFeatureFlags();
+
+  // Conversation sidebar state - only if feature is enabled
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [conversationStorage, setConversationStorage] = useState<any>(null);
 
   // Performance monitoring state
   const [performanceMetrics, setPerformanceMetrics] = useState({
@@ -86,6 +95,34 @@ const App = React.memo(() => {
     }
   }, [webviewApi, updatePerformanceMetrics]);
 
+  // Initialize conversation storage from VS Code extension
+  useEffect(() => {
+    // Request conversation storage instance from extension
+    if (webviewApi && webviewApi.sendCommand) {
+      webviewApi.sendCommand('requestConversationStorage');
+    }
+  }, [webviewApi]);
+
+  // Handle storage instance from extension
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const message = event.data;
+      if (message.command === 'conversationStorageInstance') {
+        setConversationStorage(message.storage);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    // Only allow toggling if the feature is enabled
+    if (isEnabled('conversationSidebar')) {
+      setIsSidebarVisible(prev => !prev);
+    }
+  }, [isEnabled]);
+
   // Initialize app with performance monitoring
   useEffect(() => {
     initializeApp();
@@ -116,15 +153,26 @@ const App = React.memo(() => {
           errorLogger.info("Offline queue processed", { processed, failed });
         }}
       >
-        <div className="app">
+        <div className={`app ${isEnabled('conversationSidebar') && isSidebarVisible ? 'with-sidebar' : ''}`}>
           {/* Connection status and offline banner */}
           <div className="app__status">
             <ConnectionStatus showDetails={false} />
             <OfflineBanner showQueue={true} />
           </div>
 
+          {/* Conversation sidebar - only render if feature is enabled */}
+          {isEnabled('conversationSidebar') && (
+            <ConversationSidebar
+              isVisible={isSidebarVisible}
+              onToggle={toggleSidebar}
+              storage={conversationStorage}
+            />
+          )}
+
           {/* Main chat interface */}
-          <ChatInterface />
+          <div className={`chat-main ${isEnabled('conversationSidebar') && isSidebarVisible ? 'with-sidebar' : ''}`}>
+            <ChatInterface />
+          </div>
 
           {/* Performance monitoring in development */}
           {process.env.NODE_ENV === "development" && (

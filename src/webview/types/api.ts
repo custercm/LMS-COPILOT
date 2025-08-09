@@ -83,6 +83,13 @@ export interface CreateFileCommand {
   requestId: string;
 }
 
+export interface SecurityApprovalCommand {
+  command: "securityApproval";
+  promptId: string;
+  approved: boolean;
+  alwaysAllow?: boolean;
+}
+
 export interface WebviewReadyCommand {
   command: "webviewReady";
 }
@@ -108,6 +115,7 @@ export type WebviewCommand =
   | PreviewFileCommand
   | FileUploadCommand
   | CreateFileCommand
+  | SecurityApprovalCommand
   | WebviewReadyCommand
   | PerformanceTestCommand
   | CommandMessage;
@@ -149,10 +157,27 @@ export interface FilePreviewResponseEvent {
   error?: string;
 }
 
+export interface SecurityPromptEvent {
+  command: "securityPrompt";
+  promptId: string;
+  commandToApprove: string;
+  riskLevel: "low" | "medium" | "high";
+  description: string;
+  operation: string;
+  path: string;
+}
+
+export interface HideSecurityPromptEvent {
+  command: "hideSecurityPrompt";
+  promptId: string;
+}
+
 export type ExtensionMessage =
   | AddMessageEvent
   | ShowTypingIndicatorEvent
   | HideTypingIndicatorEvent
   | HandleErrorEvent
   | AddFileReferenceEvent
-  | FilePreviewResponseEvent;
+  | FilePreviewResponseEvent
+  | SecurityPromptEvent
+  | HideSecurityPromptEvent;

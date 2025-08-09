@@ -16,7 +16,6 @@
     "onLanguage"
   ],
   "main": "./dist/extension.js",
-  "browser": "./dist/webview/webview.js",
   "contributes": {
     "viewsContainers": {
       "panel": [
@@ -132,14 +131,20 @@
           "type": "number",
           "default": 200,
           "description": "Maximum length of completion suggestions"
+        },
+        "lmsCopilot.enableAutoFileCreation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically trigger file creation when AI suggests it (experimental feature)"
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "tsc -p ./",
-    "watch": "tsc -w -p ./",
+  "vscode:prepublish": "npm run package",
+  "compile": "tsc -p ./",
+  "watch": "tsc -w -p ./",
+  "build": "webpack --mode production && webpack --config webpack.webview.config.js --mode production",
     "package": "webpack --mode production && webpack --config webpack.webview.config.js --mode production",
     "dev": "webpack --mode development && webpack --config webpack.webview.config.js --mode development",
     "watch:webview": "webpack --config webpack.webview.config.js --mode development --watch",

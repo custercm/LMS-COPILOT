@@ -86,7 +86,7 @@ The LMS Copilot extension has a well-architected foundation but is missing **cri
 
 2. **Add tests** in `__tests__/unit/utils/aiResponseParser.test.ts`
 3. **Integrate gradually** - add to `MessageHandler` without changing behavior yet
-4. **Run all tests** - must maintain 108/108 passing
+4. **Run all tests** - must maintain 100% passing
 5. **Test parser in isolation** before connecting to file creation
 
 **Rollback Plan:** Remove parser integration, keep file as standalone
@@ -101,7 +101,7 @@ The LMS Copilot extension has a well-architected foundation but is missing **cri
 1. **Modify `MessageHandler.handleChatMessage()`** to parse AI responses
 2. **Add feature flag** to enable/disable auto-creation
 3. **Add comprehensive tests** for the integration
-4. **Run all tests** - must maintain 108/108 passing
+4. **Run all tests** - must maintain 100% passing
 5. **Test end-to-end** - AI says "I'll create file.ts" → file actually created
 
 **Rollback Plan:** Disable feature flag, revert MessageHandler changes
@@ -133,7 +133,7 @@ The LMS Copilot extension has a well-architected foundation but is missing **cri
 1. **Add webview message types** for security prompts
 2. **Connect SecurityManager** to send prompts to chat UI
 3. **Add integration tests** for security flow
-4. **Run all tests** - must maintain 108/108 passing
+4. **Run all tests** - must maintain 100% passing
 5. **Test security flow** - dangerous command triggers in-chat prompt
 
 **Rollback Plan:** Remove message types, revert to VS Code modals

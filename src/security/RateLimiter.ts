@@ -207,7 +207,7 @@ export class RateLimiter {
     }
 
     // Include any additional keys that have been used
-    for (const key of this.limits.keys()) {
+    for (const key of Array.from(this.limits.keys())) {
       if (!status[key]) {
         status[key] = this.getStatus(key);
       }
@@ -265,7 +265,7 @@ export class RateLimiter {
   private cleanupExpiredEntries(): void {
     const now = Date.now();
 
-    for (const [key, entry] of this.limits.entries()) {
+    for (const [key, entry] of Array.from(this.limits.entries())) {
       const config = this.getConfig(key);
       const windowStart = now - config.windowMs;
 

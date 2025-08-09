@@ -22,10 +22,10 @@ export class StreamHandler {
       await this.client.streamMessage(
         message,
         this.onChunkCallback,
-        this.abortController.signal,
+        this.abortController?.signal,
       );
     } catch (error) {
-      if (this.abortController.signal.aborted) {
+      if (this.abortController?.signal.aborted) {
         return;
       }
 
@@ -36,7 +36,7 @@ export class StreamHandler {
         // Split response into chunks and emit each one with delay to simulate streaming
         const chunks = response.split(" ");
         for (const chunk of chunks) {
-          if (this.abortController.signal.aborted) {
+          if (this.abortController?.signal.aborted) {
             break;
           }
           if (chunk.trim()) {
